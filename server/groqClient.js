@@ -1,7 +1,7 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import { config } from './config.js';
+import { logger } from './logger.js';
+import { UpstreamError } from './errors.js';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 /**
@@ -11,6 +11,13 @@ const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 export async function callGroqAPI(messages, systemPrompt = '', responseFormatJson = true) {
   const modelsToTry = ['groq/compound', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b'];
   let lastError = null;
+
+  if (!config.groq.configured) {
+    throw new UpstreamError('GROQ_API_KEY is not configured; AI synthesis unavailable.', {
+      statusCode: 503,
+      code: 'ai_not_configured'
+    });
+  }
 
   const fullMessages = [];
   if (systemPrompt) {
@@ -34,7 +41,7 @@ export async function callGroqAPI(messages, systemPrompt = '', responseFormatJso
       const response = await fetch(GROQ_ENDPOINT, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Authorization': `Bearer ${config.groq.apiKey}`,
           'Content-Type': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         },
@@ -43,7 +50,7 @@ export async function callGroqAPI(messages, systemPrompt = '', responseFormatJso
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`Groq model ${model} returned status ${response.status}: ${errorText}`);
+        logger.warn(`Groq model ${model} returned status ${response.status}`, { model, statusCode: response.status });
         lastError = new Error(`Groq API HTTP ${response.status}: ${errorText}`);
         continue;
       }
@@ -69,7 +76,7 @@ export async function callGroqAPI(messages, systemPrompt = '', responseFormatJso
 
       return content;
     } catch (err) {
-      console.error(`Failed with Groq model ${model}:`, err.message);
+      logger.error(`Failed with Groq model ${model}`, { model, reason: err.message });
       lastError = err;
     }
   }

@@ -1,4 +1,5 @@
 import { callGroqAPI } from './groqClient.js';
+import { logger } from './logger.js';
 
 /**
  * Helper to truncate text strictly at full sentence boundaries or full word boundaries.
@@ -137,10 +138,10 @@ Analyze the Blast Radius. Make sure to identify at least 1-3 affected paper sect
 
   try {
     const aiResult = await callGroqAPI([{ role: 'user', content: userPrompt }], systemPrompt, true);
-    return sanitizeEngineResult(aiResult, staticMatches, paperAST, codeSymbols, queryOrCodeChange, startTime);
+    return sanitizeEngineResult(aiResult, staticMatches, paperAST, codeSymbols, queryOrCodeChange, startTime, 'ai_synthesized');
   } catch (err) {
-    console.error('Groq synthesis error, falling back to static AST graph reachability:', err.message);
-    return generateDynamicASTReachabilityAnalysis(staticMatches, paperAST, codeSymbols, queryOrCodeChange, startTime);
+    logger.warn('Groq synthesis unavailable, using static AST reachability fallback', { reason: err.message, code: err.code || null });
+    return generateDynamicASTReachabilityAnalysis(staticMatches, paperAST, codeSymbols, queryOrCodeChange, startTime, 'static_fallback', err.message);
   }
 }
 
@@ -239,7 +240,7 @@ function matchSymbolsToPaper(codeSymbols, paperAST, changeQuery) {
  * Sanitizes and validates engine result structure with explicit Agent Trace & Cost Audit metrics.
  * Ensures section_id matching against paperAST.sections.
  */
-function sanitizeEngineResult(aiResult, staticMatches, paperAST, codeSymbols, query, startTime) {
+function sanitizeEngineResult(aiResult, staticMatches, paperAST, codeSymbols, query, startTime, engineMode = 'ai_synthesized', fallbackReason = null) {
   const executionTimeMs = Date.now() - startTime;
   const sections = paperAST.sections || [];
 
@@ -304,6 +305,11 @@ function sanitizeEngineResult(aiResult, staticMatches, paperAST, codeSymbols, qu
   ];
 
   return {
+    status: 'complete',
+    engine: {
+      mode: engineMode,
+      fallback_reason: fallbackReason
+    },
     overall_impact_score: aiResult?.overall_impact_score ?? (affectedSections.length > 0 ? 75 : 45),
     risk_level: aiResult?.risk_level || (affectedSections.length > 0 ? 'HIGH' : 'MAJOR'),
     confidence_score: aiResult?.confidence_score ?? 94,
@@ -335,7 +341,7 @@ function sanitizeEngineResult(aiResult, staticMatches, paperAST, codeSymbols, qu
 /**
  * Dynamic AST reachability analysis generator based on REAL parsed document sections.
  */
-function generateDynamicASTReachabilityAnalysis(staticMatches, paperAST, codeSymbols, changeQuery, startTime) {
+function generateDynamicASTReachabilityAnalysis(staticMatches, paperAST, codeSymbols, changeQuery, startTime, engineMode = 'static_fallback', fallbackReason = null) {
   const executionTimeMs = Date.now() - startTime;
   const sections = paperAST.sections || [];
   const uniqueSectionIds = [...new Set(staticMatches.map(m => m.targetId))];
@@ -379,6 +385,11 @@ function generateDynamicASTReachabilityAnalysis(staticMatches, paperAST, codeSym
   else if (calculatedScore >= 50) riskLevel = 'MAJOR';
 
   return {
+    status: 'complete',
+    engine: {
+      mode: engineMode,
+      fallback_reason: fallbackReason
+    },
     overall_impact_score: calculatedScore,
     risk_level: riskLevel,
     confidence_score: 92,
