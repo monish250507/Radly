@@ -7,3 +7,5 @@ scratch
 *.log
 
 .vercel
+
+_legacy_python/
