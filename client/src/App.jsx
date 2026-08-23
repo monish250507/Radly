@@ -291,7 +291,7 @@ export default function App() {
               className={`neo-tab ${activeTab === 'agents' ? 'neo-tab-active' : ''}`}
               onClick={() => setActiveTab('agents')}
             >
-              Agent Trace ({analysis?.agent_collaboration_trace?.length || 3})
+              Agent Trace ({analysis?.agent_collaboration_trace?.length ?? 0})
             </button>
             <button
               className={`neo-tab ${activeTab === 'code' ? 'neo-tab-active' : ''}`}
@@ -344,25 +344,32 @@ export default function App() {
                     Multi-Agent Collaboration Trace Log
                   </h3>
                   <p className="text-[11px] font-mono font-semibold text-slate-600">
-                    Auditable state log showing roles, outputs, and verification checks performed by each agent.
+                    Auditable state log showing roles and outputs performed by each agent during this analysis run.
                   </p>
+                  {analysis?.status && (
+                    <span className="mt-1 bg-slate-100 border border-black px-2 py-0.5 rounded text-[10px] font-mono font-extrabold">
+                      Analysis Status: {analysis.status}
+                    </span>
+                  )}
                 </div>
-                <div className="space-y-3">
-                  {(analysis?.agent_collaboration_trace || [
-                    { agent: 'Code AST Dependency Agent', role: 'Program Analysis & Symbol Extraction', output_summary: `Indexed ${codeSymbols.length} AST symbols.` },
-                    { agent: 'Manuscript Impact Analyst Agent', role: 'Paper AST Parsing & Equation Matching', output_summary: `Evaluated ${paperAST.sections.length} manuscript sections.` },
-                    { agent: 'Skeptic Verification Arbiter Agent', role: 'Risk Validation & Sentence Audit', output_summary: `Validated risk bounds and complete sentences.` }
-                  ]).map((trace, idx) => (
-                    <div key={idx} className="bg-white border-2 border-black p-4 rounded-md font-mono text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-black uppercase text-xs">{trace.agent}</span>
-                        <span className="bg-emerald-200 border border-black px-2 py-0.5 rounded text-[10px] font-extrabold">VERIFIED ACTIVE</span>
+                {!analysis ? (
+                  <p className="text-xs font-mono text-slate-500 py-4 text-center">
+                    No analysis run yet. Run a Blast Radius calculation to see the agent trace.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {(analysis.agent_collaboration_trace || []).map((trace, idx) => (
+                      <div key={idx} className="bg-white border-2 border-black p-4 rounded-md font-mono text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-black uppercase text-xs">{trace.agent}</span>
+                          <span className="bg-slate-100 border border-black px-2 py-0.5 rounded text-[10px] font-extrabold">COMPLETED</span>
+                        </div>
+                        <p className="text-[11px] text-slate-700 font-bold">Role: {trace.role}</p>
+                        <p className="text-[11px] text-slate-900 font-medium">Output: {trace.output_summary}</p>
                       </div>
-                      <p className="text-[11px] text-slate-700 font-bold">Role: {trace.role}</p>
-                      <p className="text-[11px] text-slate-900 font-medium">Output: {trace.output_summary}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

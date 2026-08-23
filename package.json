@@ -8,7 +8,8 @@
     "server": "node server/index.js",
     "client": "vite client --host",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "vite build client --outDir ../dist"
+    "build": "vite build client --outDir ../dist",
+    "test": "node --test server/tests/impactEngine.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
