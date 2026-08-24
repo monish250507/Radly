@@ -9,7 +9,6 @@ scratch
 .vercel
 
 _legacy_python/
-
-
-
-
+venv/
+__pycache__/
+*.pyc
