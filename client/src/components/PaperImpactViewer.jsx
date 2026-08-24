@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import VerificationBadge from './VerificationBadge.jsx';
+import EvidencePanel from './EvidencePanel.jsx';
 
 export default function PaperImpactViewer({ paperAST, analysis }) {
   const [activeDiffSection, setActiveDiffSection] = useState(null);
@@ -68,16 +70,16 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
   return (
     <div className="space-y-6">
       {/* Paper Header */}
-      <div className="flex flex-col items-start border-b-2 border-black pb-3 gap-0.5">
+      <div className="flex flex-col items-start border-b border-[var(--border-color)] pb-3 gap-0.5">
         <div className="flex items-center justify-between w-full">
-          <h2 className="text-xs font-extrabold text-black uppercase tracking-wider font-mono">
+          <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono">
             Manuscript Section Impact Matrix ({paperAST.sections.length} Sections)
           </h2>
-          <span className="text-[11px] font-mono font-bold text-slate-700">
+          <span className="text-[11px] font-medium text-gray-500">
             LaTeX / Structural AST View
           </span>
         </div>
-        <p className="text-[11px] font-mono font-semibold text-slate-600">
+        <p className="text-[11px] font-medium text-gray-500">
           Flags affected paper sections, assigns risk ratings, and generates proposed side-by-side LaTeX text diffs.
         </p>
       </div>
@@ -92,16 +94,16 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
           return (
             <div
               key={section.id}
-              className={`border-2 border-black rounded-lg p-4 transition-all ${
+              className={`neo-box p-4 transition-all ${
                 isAffected
-                  ? 'bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
-                  : 'bg-slate-50 opacity-90 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                  ? 'ring-1 ring-blue-500/20 shadow-md'
+                  : 'opacity-70'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h3 className="text-sm font-extrabold text-black font-mono">
+                    <h3 className="text-sm font-semibold text-[var(--box-text)] font-mono">
                       {formatTitle(section.title)}
                     </h3>
                     {isAffected ? (
@@ -112,12 +114,10 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
                       <span className="badge badge-none">UNAFFECTED</span>
                     )}
                     {isAffected && (
-                      <span className="text-[11px] font-mono font-bold text-slate-700">
-                        {impact.confidence || 92}% CONFIDENCE
-                      </span>
+                      <VerificationBadge status={impact.verification} />
                     )}
                   </div>
-                  <p className="text-xs font-mono font-bold text-slate-600 mt-1">
+                  <p className="text-xs font-medium text-gray-500 mt-1">
                     Lines {section.startLine || 1} – {section.endLine || 40}
                   </p>
                 </div>
@@ -132,23 +132,29 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
                 )}
               </div>
 
-              {/* Impact Reason */}
+              {/* Impact Reason + Evidence Panel */}
               {isAffected && impact.reason && (
-                <div className="mt-3 bg-amber-50 border-2 border-black p-3 rounded-md text-xs font-mono shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                  <span className="text-black font-extrabold block text-[11px] uppercase tracking-wider mb-1">
+                <div className="mt-3 bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg text-xs font-mono shadow-sm">
+                  <span className="text-[var(--box-text)] font-semibold block text-[11px] uppercase tracking-wider mb-1">
                     Impact Analysis
                   </span>
-                  <p className="text-black font-semibold leading-relaxed font-sans text-xs">
+                  <p className="text-[var(--box-text)] font-medium leading-relaxed font-sans text-xs opacity-90">
                     {impact.reason}
                   </p>
                 </div>
               )}
+              {isAffected && (
+                <EvidencePanel
+                  impact={impact}
+                  analysisVersion={analysis?.domain?.analysisVersion}
+                />
+              )}
 
               {/* Side-by-Side Paper Text Diff View */}
               {isDiffOpen && impact && (
-                <div className="mt-4 border-t-2 border-black pt-4 space-y-3">
+                <div className="mt-4 border-t border-[var(--border-color)] pt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-black uppercase font-mono">
+                    <span className="text-xs font-semibold text-[var(--box-text)] uppercase font-mono">
                       Manuscript Text Difference (Current vs Proposed)
                     </span>
                     <button
@@ -161,21 +167,21 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
                     {/* Current Text */}
-                    <div className="bg-rose-100 border-2 border-black p-3.5 rounded-md shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                      <span className="text-[10px] font-extrabold text-rose-900 uppercase tracking-wider block mb-2">
+                    <div className="bg-red-500/10 border border-red-500/20 p-3.5 rounded-lg shadow-sm">
+                      <span className="text-[10px] font-semibold text-red-600 uppercase tracking-wider block mb-2">
                         Current Paper Text
                       </span>
-                      <pre className="whitespace-pre-wrap text-black font-bold text-[11px] leading-relaxed">
+                      <pre className="whitespace-pre-wrap text-[var(--box-text)] opacity-90 font-medium text-[11px] leading-relaxed">
                         {impact.current_text || section.text}
                       </pre>
                     </div>
 
                     {/* Proposed Revised Text */}
-                    <div className="bg-emerald-100 border-2 border-black p-3.5 rounded-md shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                      <span className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider block mb-2">
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-lg shadow-sm">
+                      <span className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider block mb-2">
                         Proposed Revised Paper Text
                       </span>
-                      <pre className="whitespace-pre-wrap text-black font-bold text-[11px] leading-relaxed">
+                      <pre className="whitespace-pre-wrap text-[var(--box-text)] opacity-90 font-medium text-[11px] leading-relaxed">
                         {impact.suggested_text || section.text}
                       </pre>
                     </div>

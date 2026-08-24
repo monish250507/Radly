@@ -23,22 +23,22 @@ export default function WhatIfConsole({
   return (
     <div className="neo-box p-6 space-y-6 max-w-4xl mx-auto w-full text-center">
       {/* Inputs Stepped Setup Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b-2 border-black pb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-[var(--border-color)] pb-6">
         
         {/* Step 1: Code Repository Input */}
         <div className="space-y-3 flex flex-col items-center">
           <div className="flex flex-col items-start w-full gap-0.5">
             <div className="flex items-center justify-between w-full">
-              <h3 className="text-xs font-extrabold text-black uppercase tracking-wider font-mono text-left">
+              <h3 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono text-left">
                 1. Code Repository Input
               </h3>
               {symbolsCount > 0 && (
-                <span className="text-[11px] font-mono text-black font-extrabold bg-emerald-300 border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded shadow-sm">
                   Indexed {symbolsCount} AST Symbols ({ingestedFilesCount} file)
                 </span>
               )}
             </div>
-            <p className="text-[11px] font-mono font-semibold text-slate-600 text-left">
+            <p className="text-[11px] font-medium text-gray-500 text-left">
               Indexes functions, variables, parameters, and AST symbols from Python or JS code.
             </p>
           </div>
@@ -61,7 +61,7 @@ export default function WhatIfConsole({
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-700 pt-1 w-full">
+            <div className="flex items-center justify-between text-[11px] font-medium text-gray-500 pt-1 w-full">
               <span>Or Upload Code Files (.py, .js, .json):</span>
               <label className="neo-btn-white py-1 px-2.5 cursor-pointer whitespace-nowrap">
                 Choose Code Files
@@ -81,16 +81,16 @@ export default function WhatIfConsole({
         <div className="space-y-3 flex flex-col items-center">
           <div className="flex flex-col items-start w-full gap-0.5">
             <div className="flex items-center justify-between w-full">
-              <h3 className="text-xs font-extrabold text-black uppercase tracking-wider font-mono text-left">
+              <h3 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono text-left">
                 2. Research Paper Manuscript Input
               </h3>
               {sectionsCount > 0 && (
-                <span className="text-[11px] font-mono text-black font-extrabold bg-emerald-300 border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded shadow-sm">
                   Parsed {sectionsCount} Structural Sections
                 </span>
               )}
             </div>
-            <p className="text-[11px] font-mono font-semibold text-slate-600 text-left">
+            <p className="text-[11px] font-medium text-gray-500 text-left">
               Extracts section hierarchies, LaTeX equations, and numerical claims from PDF or DOCX.
             </p>
           </div>
@@ -112,7 +112,7 @@ export default function WhatIfConsole({
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] font-mono font-bold text-slate-700 pt-1 w-full">
+            <div className="flex items-center justify-between text-[11px] font-medium text-gray-500 pt-1 w-full">
               <span>Upload Document (.pdf, .docx, .tex):</span>
               <label className="neo-btn-white py-1 px-2.5 cursor-pointer whitespace-nowrap">
                 {isParsingPaper ? 'Parsing PDF...' : selectedFileName ? selectedFileName : 'Upload PDF/Docx'}
@@ -132,10 +132,10 @@ export default function WhatIfConsole({
       {/* Step 3: Change Query & Blast Radius Launcher */}
       <div className="space-y-3 flex flex-col items-center max-w-2xl mx-auto w-full">
         <div className="flex flex-col items-center justify-center w-full gap-0.5">
-          <h3 className="text-xs font-extrabold text-black uppercase tracking-wider font-mono text-center">
+          <h3 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono text-center">
             3. Code Logic & Parameter Change Query
           </h3>
-          <p className="text-[11px] font-mono font-semibold text-slate-600 text-center">
+          <p className="text-[11px] font-medium text-gray-500 text-center">
             Define a proposed parameter mutation to evaluate its blast radius impact across paper sections.
           </p>
         </div>

@@ -186,7 +186,7 @@ export default function App() {
         body: JSON.stringify({
           codeSymbols,
           paperAST,
-          query
+          queryOrCodeChange: query
         })
       });
 
@@ -221,7 +221,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#dbeafe] text-slate-900 flex flex-col items-center w-full font-sans">
+    <div className="min-h-screen bg-[var(--bg-color)] text-[var(--text-color)] flex flex-col items-center w-full font-sans transition-colors duration-300">
       {/* Centered App Container */}
       <div className="app-wrapper space-y-6 flex flex-col items-center">
         {/* Top Header */}
@@ -239,9 +239,9 @@ export default function App() {
         <main className="w-full space-y-6 flex flex-col items-center">
           {/* Error Alert */}
           {errorMsg && (
-            <div className="bg-rose-200 border-2 border-black text-black px-4 py-3 rounded-md font-mono text-xs flex items-center justify-between shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] w-full">
-              <span className="font-bold">Error: {errorMsg}</span>
-              <button className="neo-btn-white py-0.5 px-2 text-xs" onClick={() => setErrorMsg('')}>Dismiss</button>
+            <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded-lg font-mono text-xs flex items-center justify-between w-full backdrop-blur-sm">
+              <span className="font-semibold">Error: {errorMsg}</span>
+              <button className="neo-btn-white py-1 px-3 text-xs" onClick={() => setErrorMsg('')}>Dismiss</button>
             </div>
           )}
 
@@ -339,15 +339,15 @@ export default function App() {
 
             {activeTab === 'agents' && (
               <div className="neo-box p-5 space-y-4 w-full">
-                <div className="flex flex-col items-start border-b-2 border-black pb-2 gap-0.5">
-                  <h3 className="text-xs font-extrabold text-black uppercase tracking-wider font-mono">
+                <div className="flex flex-col items-start border-b border-[var(--border-color)] pb-2 gap-0.5">
+                  <h3 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono">
                     Multi-Agent Collaboration Trace Log
                   </h3>
-                  <p className="text-[11px] font-mono font-semibold text-slate-600">
+                  <p className="text-[11px] font-medium text-gray-500">
                     Auditable state log showing roles and outputs performed by each agent during this analysis run.
                   </p>
                   {analysis?.status && (
-                    <span className="mt-1 bg-slate-100 border border-black px-2 py-0.5 rounded text-[10px] font-mono font-extrabold">
+                    <span className="mt-1 bg-[var(--input-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded text-[10px] font-semibold text-[var(--box-text)]">
                       Analysis Status: {analysis.status}
                     </span>
                   )}
@@ -359,13 +359,13 @@ export default function App() {
                 ) : (
                   <div className="space-y-3">
                     {(analysis.agent_collaboration_trace || []).map((trace, idx) => (
-                      <div key={idx} className="bg-white border-2 border-black p-4 rounded-md font-mono text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] space-y-1">
+                      <div key={idx} className="neo-box p-4 flex flex-col gap-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-black uppercase text-xs">{trace.agent}</span>
-                          <span className="bg-slate-100 border border-black px-2 py-0.5 rounded text-[10px] font-extrabold">COMPLETED</span>
+                          <span className="font-semibold text-[var(--box-text)] uppercase text-xs">{trace.agent}</span>
+                          <span className="bg-[var(--input-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded text-[10px] font-semibold">COMPLETED</span>
                         </div>
-                        <p className="text-[11px] text-slate-700 font-bold">Role: {trace.role}</p>
-                        <p className="text-[11px] text-slate-900 font-medium">Output: {trace.output_summary}</p>
+                        <p className="text-[11px] text-gray-400 font-medium">Role: {trace.role}</p>
+                        <p className="text-[11px] text-[var(--box-text)]">Output: {trace.output_summary}</p>
                       </div>
                     ))}
                   </div>
@@ -382,7 +382,7 @@ export default function App() {
         </main>
 
         {/* Footer */}
-        <footer className="w-full neo-box py-4 px-6 text-center text-xs font-mono font-bold text-black mt-6">
+        <footer className="w-full py-6 text-center text-xs font-medium text-gray-500 mt-6 border-t border-[var(--border-color)]">
           PaperBlast Program Analysis Engine — Multi-Agent Bipartite Program AST & Manuscript Blast Radius Engine
         </footer>
       </div>
