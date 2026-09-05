@@ -1,5 +1,6 @@
 from ..domain.models import VerificationStatus
 
+
 def resolve_overall_status(
     had_processing_error: bool,
     deterministic_evidence_count: int,

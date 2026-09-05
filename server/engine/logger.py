@@ -1,7 +1,9 @@
 import json
 import logging
 from datetime import datetime
+
 from .config import config
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):

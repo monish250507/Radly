@@ -1,49 +1,133 @@
+import asyncio
 import os
 import re
-import time
 import shutil
+import time
 import zipfile
-import asyncio
+from collections import defaultdict
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import Any
+
 import httpx
-from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, field_validator
 
-from .engine.config import config
-from .engine.logger import paperblast_logger as logger
-from .engine.code_parser import extract_code_symbols
-from .engine.paper_parser import extract_text_from_document, parse_paper_structure
-from .engine.impact_engine import calculate_blast_radius
 from .domain.models import SCHEMA_VERSION, JobStatus
+from .engine.code_parser import extract_code_symbols
+from .engine.config import config
+from .engine.impact_engine import calculate_blast_radius
 from .engine.jobs import create_job, get_job, update_job_status
-from fastapi import BackgroundTasks
+from .engine.logger import paperblast_logger as logger
+from .engine.paper_parser import extract_text_from_document, parse_paper_structure
 
+
+# ---------------------------------------------------------------------------
+# Request Models (with validation)
+# ---------------------------------------------------------------------------
 class AnalyzeRequest(BaseModel):
-    files: List[Dict[str, Any]]
-    paper: Dict[str, Any]
-    changeQuery: Optional[str] = None
-    options: Optional[Dict[str, Any]] = None
+    files: list[dict[str, Any]] = []
+    paper: dict[str, Any] | None = None
+    changeQuery: str | None = None
+    options: dict[str, Any] | None = None
 
-app = FastAPI(title=config.Service.FRIENDLY_NAME)
+    @field_validator('changeQuery')
+    @classmethod
+    def validate_query(cls, v):
+        if v is not None and len(v.strip()) == 0:
+            raise ValueError('changeQuery cannot be an empty string.')
+        return v
+
+
+# ---------------------------------------------------------------------------
+# Rate limiter — sliding window (production: replace with Redis)
+# ---------------------------------------------------------------------------
+_rate_windows: dict = defaultdict(list)
+
+RATE_LIMITS = {
+    'write': {'max': 30,  'window': 60},   # 30 write requests per 60s per IP
+    'read':  {'max': 120, 'window': 60},   # 120 read requests per 60s per IP
+}
+
+def _check_rate_limit(client_ip: str, kind: str = 'read') -> bool:
+    """Returns True if allowed, False if rate-limited."""
+    limit = RATE_LIMITS.get(kind, RATE_LIMITS['read'])
+    now = time.monotonic()
+    window_key = f"{client_ip}:{kind}"
+    timestamps = _rate_windows[window_key]
+    # Prune old entries
+    cutoff = now - limit['window']
+    _rate_windows[window_key] = [t for t in timestamps if t > cutoff]
+    if len(_rate_windows[window_key]) >= limit['max']:
+        return False
+    _rate_windows[window_key].append(now)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# App initialisation
+# ---------------------------------------------------------------------------
+app = FastAPI(
+    title=config.Service.FRIENDLY_NAME,
+    description='PaperBlast — Research Code & Paper Impact Analyzer API',
+    version='1.1.0',
+    docs_url='/api/docs',
+    redoc_url='/api/redoc',
+    openapi_url='/api/openapi.json',
+)
 
 @app.post("/api/jobs/analyze")
 async def start_analysis_job(req: AnalyzeRequest, background_tasks: BackgroundTasks):
+    """
+    P0 FIX: Real analysis pipeline replaces the simulated asyncio.sleep(1) job.
+    A job only reaches READY after the actual stages complete.
+    Stages: symbol extraction → paper parsing → impact analysis.
+    """
     job_id = create_job()
-    
+
     async def process_job():
-        update_job_status(job_id, JobStatus.PROCESSING)
+        update_job_status(job_id, JobStatus.PROCESSING, progress="stage:extract_symbols")
         try:
-            await asyncio.sleep(1) # simulate work
-            update_job_status(job_id, JobStatus.READY, result={"message": "Analysis Complete"})
+            # Stage 1: Extract code symbols from provided files
+            code_symbols = extract_code_symbols(req.files) if req.files else []
+            update_job_status(job_id, JobStatus.PROCESSING, progress="stage:parse_paper")
+
+            # Stage 2: Parse paper structure from provided paper content
+            paper_content = req.paper.get("content", "") if req.paper else ""
+            file_type = req.paper.get("fileType", "txt") if req.paper else "txt"
+            if paper_content:
+                raw_text = await extract_text_from_document(paper_content, file_type)
+                paper_ast = parse_paper_structure(raw_text)
+            else:
+                paper_ast = {"sections": [], "equations": [], "tables": [], "claims": []}
+            update_job_status(job_id, JobStatus.PROCESSING, progress="stage:calculate_impact")
+
+            # Stage 3: Run deterministic impact analysis
+            change_query = req.changeQuery or ""
+            if not change_query:
+                update_job_status(
+                    job_id, JobStatus.FAILED,
+                    error="changeQuery is required for impact analysis. Provide a code diff, PR description, or change description."
+                )
+                return
+
+            result = await calculate_blast_radius(
+                code_symbols,
+                paper_ast,
+                change_query,
+                req.options or {}
+            )
+
+            update_job_status(job_id, JobStatus.READY, result=result)
+
         except Exception as e:
+            logger.error("Job pipeline failed", {"job_id": job_id, "error": str(e)})
             update_job_status(job_id, JobStatus.FAILED, error=str(e))
-            
+
     background_tasks.add_task(process_job)
     return {"jobId": job_id}
+
 
 @app.get("/api/jobs/{job_id}")
 def get_job_status(job_id: str):
@@ -51,30 +135,83 @@ def get_job_status(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+
+@app.get("/api/health")
+async def health():
+    """Production health check endpoint. Returns service status and version."""
+    from datetime import datetime
+    return {
+        "status": "ok",
+        "service": "paperblast",
+        "version": "1.1.0",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "schema_version": SCHEMA_VERSION,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Middleware: request logging + rate limiting + request size guard
+# ---------------------------------------------------------------------------
+MAX_REQUEST_SIZE = 10 * 1024 * 1024  # 10 MB
+
+@app.middleware('http')
+async def request_middleware(request: Request, call_next):
+    start = time.monotonic()
+    client_ip = request.client.host if request.client else 'unknown'
+    method = request.method
+    path = request.url.path
+
+    # Request size guard
+    content_length = request.headers.get('content-length')
+    if content_length and int(content_length) > MAX_REQUEST_SIZE:
+        logger.warn('Request exceeds size limit', {'ip': client_ip, 'path': path, 'size': content_length})
+        return Response(
+            content='{"error": "Request body too large. Maximum 10 MB."}',
+            status_code=413,
+            media_type='application/json'
+        )
+
+    # Rate limiting
+    is_write = method in ('POST', 'PUT', 'PATCH', 'DELETE')
+    kind = 'write' if is_write else 'read'
+    if not _check_rate_limit(client_ip, kind):
+        limit = RATE_LIMITS[kind]
+        logger.warn('Rate limit exceeded', {'ip': client_ip, 'path': path, 'kind': kind})
+        return Response(
+            content=f'{{"error": "Rate limit exceeded. Max {limit["max"]} {kind} requests per {limit["window"]}s."}}',
+            status_code=429,
+            media_type='application/json'
+        )
+
+    response = await call_next(request)
+    elapsed_ms = int((time.monotonic() - start) * 1000)
+
+    logger.info('Request completed', {
+        'method': method, 'path': path,
+        'status': response.status_code, 'ms': elapsed_ms, 'ip': client_ip
+    })
+    response.headers['X-Response-Time-Ms'] = str(elapsed_ms)
+    return response
+
 
 from .routers.pr_router import pr_router
+
 app.include_router(pr_router)
 
 class IngestGithubRequest(BaseModel):
-    repoUrl: Optional[str] = None
-    codeFiles: Optional[List[Dict[str, Any]]] = None
+    repoUrl: str | None = None
+    codeFiles: list[dict[str, Any]] | None = None
 
 class ParsePaperRequest(BaseModel):
-    documentBuffer: Optional[str] = None
-    fileType: Optional[str] = 'txt'
+    documentBuffer: str | None = None
+    fileType: str | None = 'txt'
 
 class AnalyzeImpactRequest(BaseModel):
-    codeSymbols: List[Dict[str, Any]]
-    paperAST: Dict[str, Any]
+    codeSymbols: list[dict[str, Any]]
+    paperAST: dict[str, Any]
     queryOrCodeChange: str
-    opts: Optional[Dict[str, Any]] = None
+    opts: dict[str, Any] | None = None
 
 @app.middleware("http")
 async def add_request_context(request: Request, call_next):
@@ -154,8 +291,8 @@ async def ingest_github(req: IngestGithubRequest):
                     resp = await client.get(zip_url, timeout=6.0, headers={'User-Agent': 'Mozilla/5.0'})
                     if resp.status_code == 200:
                         zip_path = os.path.join(mkdtemp(), 'repo.zip')
-                        with open(zip_path, 'wb') as f:
-                            f.write(resp.content)
+                        with open(zip_path, 'wb') as zip_f:
+                            zip_f.write(resp.content)
                         with zipfile.ZipFile(zip_path, 'r') as zf:
                             for fn in zf.namelist():
                                 ext = os.path.splitext(fn)[1].lower()
@@ -163,7 +300,7 @@ async def ingest_github(req: IngestGithubRequest):
                                     content = zf.read(fn).decode('utf-8', errors='ignore')
                                     code_files.append({'path': fn, 'content': content})
                         break
-                except Exception as e:
+                except Exception:
                     pass
 
     if not code_files:
@@ -183,7 +320,7 @@ async def parse_paper(req: ParsePaperRequest):
     if not req.documentBuffer:
         raise HTTPException(status_code=400, detail="Document content required.")
     
-    raw_text = await extract_text_from_document(req.documentBuffer, req.fileType)
+    raw_text = await extract_text_from_document(req.documentBuffer, req.fileType or 'txt')
     paper_ast = parse_paper_structure(raw_text)
     
     return {
@@ -204,7 +341,7 @@ async def analyze_impact(req: AnalyzeImpactRequest):
         req.codeSymbols,
         req.paperAST,
         req.queryOrCodeChange,
-        req.opts
+        req.opts or {}
     )
     return result
 

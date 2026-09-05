@@ -1,25 +1,32 @@
-import time
 import json
 import re
-from typing import List, Dict, Any, Optional
-
-from .groq_client import call_groq_api, UpstreamError
-from .logger import paperblast_logger as logger
-from .status_model import resolve_overall_status, derive_risk_level
-from ..domain.models import VerificationStatus
-from ..domain.factories import (
-    build_artifact_index, evidence_from_static_matches, evidence_from_ai_sections,
-    findings_from_ai_sections, findings_from_static_sections, make_analysis_version,
-    make_research_project
-)
-
+import time
 import uuid
 from datetime import datetime
-from ..domain.models import ResearchProject, ImpactFinding, VerificationStatus, ArtifactType
+from typing import Any, Dict, List, Optional
+
+from ..domain.factories import (
+    build_artifact_index,
+    evidence_from_ai_sections,
+    evidence_from_static_matches,
+    findings_from_ai_sections,
+    findings_from_static_sections,
+    make_analysis_version,
+    make_research_project,
+)
+from ..domain.models import (
+    ArtifactType,
+    ImpactFinding,
+    ResearchProject,
+    VerificationStatus,
+)
+from .groq_client import call_groq_api
+from .logger import paperblast_logger as logger
+from .status_model import derive_risk_level, resolve_overall_status
 
 VALID_RISKS = {'CRITICAL', 'HIGH', 'MAJOR', 'MINOR'}
 
-def compare_graphs(base_project: ResearchProject, proposed_project: ResearchProject) -> List[ImpactFinding]:
+def compare_graphs(base_project: ResearchProject, proposed_project: ResearchProject) -> list[ImpactFinding]:
     """
     Diffs two versions of a research project to identify changed artifacts 
     and traces downstream deterministic dependencies.
@@ -36,12 +43,10 @@ def compare_graphs(base_project: ResearchProject, proposed_project: ResearchProj
         
     changed_artifact_ids = set()
     for art_id, prop_art in proposed_artifacts.items():
-        if art_id not in base_artifacts:
-            changed_artifact_ids.add(art_id)
-        elif base_artifacts[art_id].contentHash != prop_art.contentHash:
+        if art_id not in base_artifacts or base_artifacts[art_id].contentHash != prop_art.contentHash:
             changed_artifact_ids.add(art_id)
             
-    adjacency = {}
+    adjacency: Dict[str, List[Any]] = {}
     for ev in proposed_project.evidenceRecords:
         if ev.sourceArtifactId and ev.targetArtifactId:
             if ev.sourceArtifactId not in adjacency:
@@ -50,7 +55,7 @@ def compare_graphs(base_project: ResearchProject, proposed_project: ResearchProj
             
     visited = set()
     
-    def traverse(art_id: str, path: List[str]):
+    def traverse(art_id: str, path: list[str]):
         if art_id in visited:
             return
         visited.add(art_id)
@@ -97,7 +102,7 @@ def truncate_at_sentence(text: str, max_chars: int = 350) -> str:
         return sliced[:last_space] + '.'
     return sliced + '.'
 
-def match_symbols_to_paper(code_symbols: List[Dict[str, Any]], paper_ast: Dict[str, Any], change_query: str) -> List[Dict[str, Any]]:
+def match_symbols_to_paper(code_symbols: list[dict[str, Any]], paper_ast: dict[str, Any], change_query: str) -> list[dict[str, Any]]:
     matches = []
     seen_edge_keys = set()
     query_lower = (change_query or '').lower()
@@ -170,7 +175,7 @@ def match_symbols_to_paper(code_symbols: List[Dict[str, Any]], paper_ast: Dict[s
 
     return matches
 
-def validate_ai_sections(ai_sections: List[Any], paper_ast: Dict[str, Any]) -> tuple:
+def validate_ai_sections(ai_sections: list[Any], paper_ast: dict[str, Any]) -> tuple:
     sections = paper_ast.get('sections', [])
     section_index = {s['id']: s for s in sections}
     valid = []
@@ -191,7 +196,8 @@ def validate_ai_sections(ai_sections: List[Any], paper_ast: Dict[str, Any]) -> t
             invalid.append({'item': item, 'reason': 'section_id_not_in_paperAST', 'section_id': section_id})
             continue
 
-        risk = item.get('risk').upper() if is_valid_risk(item.get('risk')) else None
+        raw_risk = item.get('risk')
+        risk = str(raw_risk).upper() if is_valid_risk(raw_risk) else None
         if not risk:
             invalid.append({'item': item, 'reason': 'invalid_risk_value', 'value': item.get('risk')})
             valid.append({
@@ -220,7 +226,7 @@ def validate_ai_sections(ai_sections: List[Any], paper_ast: Dict[str, Any]) -> t
 
     return valid, invalid
 
-def validate_ai_equations_or_tables(ai_items: List[Any], real_items: List[Dict[str, Any]], id_prefix: str) -> List[Dict[str, Any]]:
+def validate_ai_equations_or_tables(ai_items: list[Any], real_items: list[dict[str, Any]], id_prefix: str) -> list[dict[str, Any]]:
     if not isinstance(ai_items, list) or not isinstance(real_items, list):
         return []
     real_ids = {x['id'] for x in real_items}
@@ -247,7 +253,7 @@ def build_honest_agent_trace(
     engine_mode: str,
     ai_valid_sections: int,
     ai_invalid_sections: int
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     trace = [
         {
             'agent': 'Code AST Dependency Agent',
@@ -277,28 +283,19 @@ def build_honest_agent_trace(
     return trace
 
 def build_analysis_failed_result(start_time, code_symbols, paper_ast, static_matches, error_summary, analysis_version, artifact_index, section_artifact_map, query_or_code_change):
+    """
+    P0 FIX: ANALYSIS_FAILED must NOT contain any impact conclusion.
+    Returns only error diagnostics — no lineage_graph, no affected_sections,
+    no evidence records that resemble a finding. The PDF contract: if required
+    processing fails, nothing plausible is shown.
+    """
     from ..domain.models import VerificationStatus
-    
-    lineage_graph = [{
-        'source': m['symbol'],
-        'target': m['target'],
-        'relationship': m['reason'],
-        'verification': m['verification'].value if hasattr(m['verification'], 'value') else m['verification']
-    } for m in static_matches[:8]]
-    
-    # Domain build
-    sym_key_map = {m['symbol']: None for m in static_matches}
-    evidence_res = evidence_from_static_matches(static_matches, section_artifact_map, sym_key_map, analysis_version.versionId)
-    static_evidence = evidence_res["evidenceRecords"]
-    
-    # Empty static_affected_sections since no finding is actually reported in the legacy response
-    findings = findings_from_static_sections([], section_artifact_map, static_evidence, query_or_code_change, analysis_version.versionId)
-    
+
     domain_project = make_research_project(
         analysisVersion=analysis_version,
         artifacts=artifact_index,
-        evidenceRecords=static_evidence,
-        findings=findings,
+        evidenceRecords=[],   # no evidence on failure
+        findings=[],          # no findings on failure
         query=query_or_code_change,
         overallStatus=VerificationStatus.ANALYSIS_FAILED
     )
@@ -306,18 +303,16 @@ def build_analysis_failed_result(start_time, code_symbols, paper_ast, static_mat
     return {
         'status': VerificationStatus.ANALYSIS_FAILED.value,
         'engine': {
-            'mode': 'static_fallback',
-            'error_summary': error_summary
+            'mode': 'analysis_failed',
+            'error_summary': error_summary,
+            'note': (
+                'Analysis pipeline failed. No impact conclusions can be drawn. '
+                'Resolve the error and re-run before interpreting results.'
+            )
         },
-        'overall_impact_score': None,
+        # P0 FIX: No score, no risk, no affected output, no lineage
         'risk_level': 'NONE',
-        'confidence_score': None,
         'execution_time_ms': int((time.time() - start_time) * 1000),
-        'cost_efficiency': {
-            'tokens_used_est': None,
-            'estimated_cost_usd': 0.00,
-            'hardware_accelerator': 'N/A'
-        },
         'impact_summary': {
             'sections_affected': 0,
             'equations_affected': 0,
@@ -326,20 +321,18 @@ def build_analysis_failed_result(start_time, code_symbols, paper_ast, static_mat
         'affected_sections': [],
         'affected_equations': [],
         'affected_tables': [],
-        'lineage_graph': lineage_graph,
-        'agent_collaboration_trace': build_honest_agent_trace(
-            len(code_symbols or []),
-            len(paper_ast.get('sections', [])),
-            len(paper_ast.get('equations', [])),
-            len(static_matches),
-            'static_fallback',
-            0,
-            0
-        ),
+        'lineage_graph': [],   # P0 FIX: empty — no fabricated lineage on failure
+        'error_diagnostics': {
+            'static_candidates_count': len(static_matches),
+            'static_candidates_note': (
+                'Keyword/symbol overlap candidates were found but cannot be presented '
+                'as findings because the full analysis pipeline did not complete.'
+            )
+        },
         'domain': domain_project.model_dump()
     }
 
-async def calculate_blast_radius(code_symbols: List[Dict[str, Any]], paper_ast: Dict[str, Any], query_or_code_change: str, opts: Dict[str, Any] = None) -> Dict[str, Any]:
+async def calculate_blast_radius(code_symbols: List[Dict[str, Any]], paper_ast: Dict[str, Any], query_or_code_change: str, opts: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     start_time = time.time()
     opts = opts or {}
     repo_url = opts.get('repoUrl')
@@ -357,6 +350,9 @@ async def calculate_blast_radius(code_symbols: List[Dict[str, Any]], paper_ast: 
     equations = paper_ast.get('equations', [])
     tables = paper_ast.get('tables', [])
 
+    # P0 FIX: AI prompt must NOT request overall_impact_score or lineage_graph.
+    # AI role: semantic interpretation only — identify WHICH sections/equations/tables
+    # are candidate candidates and WHY. The deterministic engine resolves final edges.
     system_prompt = """You are a Skeptic Verification Arbiter that evaluates whether a proposed code or parameter change affects sections of a research paper.
 
 Your job is to return ONLY the sections you can provide a specific, substantiated reason for. If you cannot identify a clear dependency, return an empty affected_sections array.
@@ -366,12 +362,12 @@ STRICT RULES:
 - Do not invent section IDs.
 - Do not force-include sections just to have results.
 - If no section is clearly affected, return affected_sections as [].
-- overall_impact_score should reflect genuine concern (0 = no impact found, 100 = catastrophic).
+- Do NOT return an overall numeric score — impact is expressed via explicit status categories only.
+- Do NOT return a lineage_graph — lineage is built deterministically from code artifacts, not by the AI.
 - Do not fabricate. If uncertain, omit.
 
 Output must be a valid JSON object:
 {
-  "overall_impact_score": <number 0-100 or null if genuinely unknown>,
   "risk_level": "<CRITICAL | HIGH | MAJOR | MINOR | NONE>",
   "affected_sections": [
     {
@@ -387,9 +383,6 @@ Output must be a valid JSON object:
   ],
   "affected_tables": [
     { "id": "<exact id from input>", "label": "<string>", "risk": "<CRITICAL|HIGH|MAJOR|MINOR>", "explanation": "<string>" }
-  ],
-  "lineage_graph": [
-    { "source": "<Code Symbol / File:Line>", "target": "<Paper Section>", "relationship": "<string>" }
   ]
 }"""
 
@@ -474,7 +467,7 @@ Return a JSON object. Only include sections you can provide a substantiated reas
 
         overall_status = resolve_overall_status(True, 0, len(static_affected_sections), 0, False)
 
-        sym_key_map = {m['symbol']: None for m in static_matches}
+        sym_key_map = {str(m['symbol']): str(m['symbol']) for m in static_matches}
         evidence_res = evidence_from_static_matches(static_matches, section_artifact_map, sym_key_map, analysis_version.versionId)
         static_evidence = evidence_res["evidenceRecords"]
         
@@ -538,8 +531,8 @@ Return a JSON object. Only include sections you can provide a substantiated reas
             'count': len(invalid_sections)
         })
 
-    raw_score = ai_result.get('overall_impact_score')
-    impact_score = round(raw_score) if isinstance(raw_score, (int, float)) and 0 <= raw_score <= 100 else None
+    # P0 FIX: No overall_impact_score — removed from prompt and not propagated.
+    # Impact is expressed via explicit status categories (VerificationStatus) only.
 
     risk_level = 'NONE'
     ai_risk = ai_result.get('risk_level')
@@ -550,25 +543,20 @@ Return a JSON object. Only include sections you can provide a substantiated reas
         all_likely = all(s['verification'] == VerificationStatus.NEEDS_REVIEW.value for s in valid_sections)
         risk_level = derive_risk_level(coverage_ratio, all_likely)
 
-    if isinstance(ai_result.get('lineage_graph'), list) and len(ai_result['lineage_graph']) > 0:
-        lineage_graph = [{
-            'source': str(e.get('source', '')),
-            'target': str(e.get('target', '')),
-            'relationship': str(e.get('relationship', '')),
-            'verification': VerificationStatus.NEEDS_REVIEW.value
-        } for e in ai_result['lineage_graph']]
-    else:
-        lineage_graph = [{
-            'source': m['symbol'],
-            'target': m['target'],
-            'relationship': m['reason'],
-            'verification': m['verification'].value if hasattr(m['verification'], 'value') else m['verification']
-        } for m in static_matches[:8]]
+    # P0 FIX: Do NOT accept ai_result['lineage_graph'] as factual evidence.
+    # AI-authored edges are not dependency proof. Lineage is built from
+    # deterministic static_matches only (all marked NEEDS_REVIEW).
+    lineage_graph = [{
+        'source': m['symbol'],
+        'target': m['target'],
+        'relationship': m['reason'],
+        'verification': m['verification'].value if hasattr(m['verification'], 'value') else m['verification']
+    } for m in static_matches[:8]]
 
     overall_status = resolve_overall_status(False, 0, len(valid_sections), len(invalid_sections), True)
 
     # Domain build
-    sym_key_map = {m['symbol']: None for m in static_matches}
+    sym_key_map = {str(m['symbol']): str(m['symbol']) for m in static_matches}
     evidence_res = evidence_from_static_matches(static_matches, section_artifact_map, sym_key_map, analysis_version.versionId)
     static_evidence = evidence_res["evidenceRecords"]
     
@@ -590,7 +578,6 @@ Return a JSON object. Only include sections you can provide a substantiated reas
         'status': overall_status.value if hasattr(overall_status, 'value') else overall_status,
         'engine': {
             'mode': 'ai_synthesized',
-            'fallback_reason': None,
             'validation_summary': {
                 'sections_accepted': len(valid_sections),
                 'sections_rejected': len(invalid_sections),
@@ -598,15 +585,9 @@ Return a JSON object. Only include sections you can provide a substantiated reas
                 'tables_accepted': len(valid_tables)
             }
         },
-        'overall_impact_score': impact_score,
+        # P0 FIX: overall_impact_score removed — no uncalibrated 0-100 percentage
         'risk_level': risk_level,
-        'confidence_score': None,
         'execution_time_ms': int((time.time() - start_time) * 1000),
-        'cost_efficiency': {
-            'tokens_used_est': None,
-            'estimated_cost_usd': 0.00,
-            'hardware_accelerator': 'Groq LPU Inference Engine'
-        },
         'impact_summary': {
             'sections_affected': len(valid_sections),
             'equations_affected': len(valid_equations),
@@ -615,6 +596,7 @@ Return a JSON object. Only include sections you can provide a substantiated reas
         'affected_sections': valid_sections,
         'affected_equations': valid_equations,
         'affected_tables': valid_tables,
+        # P0 FIX: lineage from deterministic static_matches only (all NEEDS_REVIEW)
         'lineage_graph': lineage_graph,
         'agent_collaboration_trace': build_honest_agent_trace(
             len(code_symbols or []),

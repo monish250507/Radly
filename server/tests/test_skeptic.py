@@ -1,11 +1,12 @@
-import pytest
-import asyncio
 from datetime import datetime
 from unittest.mock import patch
 
-from server.domain.models import ResearchAgentRun, AgentStatus, VerificationStatus
+import pytest
+
+from server.domain.models import AgentStatus, ResearchAgentRun, VerificationStatus
 from server.engine.skeptic_runner import tick_skeptic
 from server.tests.test_provenance_graph import make_dummy_project
+
 
 @pytest.fixture
 def mock_groq():

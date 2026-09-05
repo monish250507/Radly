@@ -1,17 +1,19 @@
-import pytest
-from server.domain.models import (
-    ArtifactType, EvidenceType, RelationshipType, VerificationStatus,
-    ExtractionStatus, AnalysisState, SCHEMA_VERSION,
-    ResearchArtifact, ArtifactIndex, Evidence, ImpactFinding, AnalysisVersion,
-    ResearchProject, ProjectArtifacts, ProjectSummary, stable_id, content_hash,
-    max_verification_for_evidence
-)
 from server.domain.factories import (
-    code_artifact_from_symbol, section_artifact, equation_artifact, table_artifact,
-    build_artifact_index, make_evidence, evidence_from_static_matches,
-    evidence_from_ai_sections, make_impact_finding, findings_from_ai_sections,
-    findings_from_static_sections, repo_snapshot_hash, manuscript_hash,
-    make_analysis_version, check_staleness, make_research_project
+    build_artifact_index,
+    check_staleness,
+    code_artifact_from_symbol,
+    make_analysis_version,
+    make_evidence,
+    make_impact_finding,
+    section_artifact,
+)
+from server.domain.models import (
+    ArtifactType,
+    EvidenceType,
+    ExtractionStatus,
+    RelationshipType,
+    VerificationStatus,
+    max_verification_for_evidence,
 )
 
 SYM_TAU = {'symbol': 'tau', 'type': 'Variable', 'value': '0.07', 'file': 'clip/model.py', 'line': 42}

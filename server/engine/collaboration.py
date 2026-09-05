@@ -1,10 +1,18 @@
 import uuid
 from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+
 from fastapi import HTTPException
+
 from ..domain.auth_models import (
-    User, ProjectMembership, Role, Invitation, InvitationStatus, AuditEvent, ConversationVisibility
+    AuditEvent,
+    Invitation,
+    InvitationStatus,
+    Role,
+    User,
 )
 from .persistence.db_adapter import get_db_provider
+
 
 async def migrate_guest_to_auth(email: str, guest_session_id: str) -> User:
     """
@@ -95,7 +103,7 @@ async def accept_invitation(token: str, current_user: User):
     await log_audit_event(inv.project_id, current_user.id, "invitation_accepted", {"role": inv.role.value})
     return {"status": "success", "project_id": inv.project_id}
 
-async def log_audit_event(project_id: str, actor_id: str, action: str, details: dict = None):
+async def log_audit_event(project_id: str, actor_id: str, action: str, details: Optional[Dict[str, Any]] = None):
     db = get_db_provider()
     event = AuditEvent(
         id=f"evt_{uuid.uuid4().hex[:8]}",

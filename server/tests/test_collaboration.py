@@ -1,10 +1,21 @@
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 from fastapi import HTTPException
-from server.domain.auth_models import User, Role, Conversation, ConversationVisibility, InvitationStatus
-from server.engine.persistence.db_adapter import InMemoryAdapter, get_db_provider
-from server.engine.collaboration import migrate_guest_to_auth, send_invitation, accept_invitation
+
+from server.domain.auth_models import (
+    Conversation,
+    InvitationStatus,
+    Role,
+)
 from server.engine.auth import require_role
+from server.engine.collaboration import (
+    accept_invitation,
+    migrate_guest_to_auth,
+    send_invitation,
+)
+from server.engine.persistence.db_adapter import InMemoryAdapter, get_db_provider
+
 
 @pytest.fixture(autouse=True)
 def mock_db():

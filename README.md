@@ -4,8 +4,53 @@ PaperBlast is a research engineering tool designed to map code changes (Git diff
 
 Rather than relying on hallucination-prone LLM summarization, PaperBlast builds a deterministic **Provenance Graph** connecting configuration to experiments, metrics, claims, and figures. It then uses a bounded **Agent Orchestrator** and **Skeptic Verifier** to query this graph, ensuring that any claim about code impacting a paper is backed by rigid evidence.
 
-## Architecture
-See [ARCHITECTURE.md](ARCHITECTURE.md) for a deep dive into the Bipartite Graph, the Agent State Machine, and the Skeptic Arbiter layer.
+## Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph Client [Frontend (Vite / React)]
+        UI[Change Console UI]
+        GraphView[Code Graph Viewer]
+        Impact[Paper Impact Viewer]
+    end
+
+    subgraph API [Backend API (FastAPI / Vercel Serverless)]
+        PRRouter[PR Router]
+        JobRouter[Job Engine]
+    end
+
+    subgraph Core [PaperBlast Impact Engine]
+        CodeAST[Code AST Parser]
+        PaperAST[Manuscript AST Parser]
+        Graph[Provenance Graph Builder]
+        Agent[Agent Orchestrator]
+        Skeptic[Skeptic Verifier]
+    end
+
+    UI -->|Trigger Analysis| PRRouter
+    PRRouter --> JobRouter
+    JobRouter --> CodeAST
+    JobRouter --> PaperAST
+    CodeAST --> Graph
+    PaperAST --> Graph
+    Graph --> Agent
+    Agent <--> Skeptic
+    Agent -->|Impact Report| UI
+```
+
+## Functional Requirements
+- **AST Parsing:** Must extract code symbols (functions, classes, variables) from source code and map them to line numbers.
+- **Document Parsing:** Must parse scientific manuscripts (PDF, TXT) into sections, claims, equations, and tables.
+- **Graph Construction:** Must build a deterministic bipartite graph linking codebase symbols to manuscript components.
+- **Impact Analysis:** Must orchestrate an AI agent to analyze diffs and traverse the provenance graph to determine blast radius.
+- **Skeptic Verification:** Must employ an adversarial "Skeptic" agent to challenge hallucinated or unsupported impact claims.
+- **Vercel Compatibility:** Must run on stateless Serverless architectures (e.g., Vercel Lambda) without local filesystem databases.
+
+## Non-Functional Requirements
+- **Performance:** End-to-end impact analysis must complete within standard serverless timeout constraints (under 30-60s depending on payload size).
+- **Scalability:** Must support concurrent analysis jobs using a queued, tick-based state machine for AI agents.
+- **Reliability:** Must degrade gracefully (fallback to static keyword matching) if the LLM API is unavailable.
+- **Maintainability:** Codebase must be strictly typed (`mypy`) and pass a robust suite of deterministic mutation tests.
 
 ## Installation & CLI Usage
 PaperBlast provides a CLI that connects to your deployed API:

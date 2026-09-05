@@ -1,10 +1,12 @@
-from fastapi import HTTPException, Depends, Header
-from typing import Optional
-from ..domain.auth_models import User, Role
-from .persistence.db_adapter import get_db_provider, DatabaseProvider
+
+from fastapi import Depends, Header, HTTPException
+
+from ..domain.auth_models import Role, User
+from .persistence.db_adapter import get_db_provider
+
 
 # Mock JWT decode for local dev
-async def get_current_user_or_guest(authorization: Optional[str] = Header(None)) -> Optional[User]:
+async def get_current_user_or_guest(authorization: str | None = Header(None)) -> User | None:
     """
     If 'Bearer user_<id>' is passed, returns the User.
     Otherwise returns None (Guest).
@@ -20,7 +22,7 @@ async def get_current_user_or_guest(authorization: Optional[str] = Header(None))
     user = await db.get_user_by_email(email)
     return user
 
-async def get_current_user(user: Optional[User] = Depends(get_current_user_or_guest)) -> User:
+async def get_current_user(user: User | None = Depends(get_current_user_or_guest)) -> User:
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
     return user

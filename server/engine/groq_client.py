@@ -1,10 +1,12 @@
 import json
 import re
-from typing import List, Dict, Any, Union
+from typing import Any
+
 from groq import AsyncGroq
-import httpx
+
 from .config import config
 from .logger import paperblast_logger as logger
+
 
 class UpstreamError(Exception):
     def __init__(self, message: str, status_code: int = 500, code: str = 'upstream_error'):
@@ -17,7 +19,7 @@ GROQ_MODELS = [
     'llama-3.1-70b-versatile'
 ]
 
-async def call_groq_api(messages: List[Dict[str, str]], system_prompt: str = '', response_format_json: bool = True) -> Union[Dict[str, Any], str]:
+async def call_groq_api(messages: list[dict[str, str]], system_prompt: str = '', response_format_json: bool = True) -> dict[str, Any] | str:
     if not config.Groq.CONFIGURED:
         raise UpstreamError('GROQ_API_KEY is not configured; AI synthesis unavailable.', 503, 'ai_not_configured')
 

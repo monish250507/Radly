@@ -1,12 +1,17 @@
-import pytest
+from datetime import datetime
+
 from server.domain.models import (
-    ResearchProject, ResearchArtifact, AnalysisVersion, 
-    ArtifactType, ArtifactIndex, ProjectArtifacts, ExtractionStatus,
-    VerificationStatus
+    AnalysisVersion,
+    ArtifactType,
+    ExtractionStatus,
+    ProjectArtifacts,
+    ResearchArtifact,
+    ResearchProject,
+    VerificationStatus,
 )
 from server.engine.graph_builder import build_provenance_graph
 from server.engine.impact_engine import compare_graphs
-from datetime import datetime
+
 
 def make_dummy_project() -> ResearchProject:
     art_config = ResearchArtifact(

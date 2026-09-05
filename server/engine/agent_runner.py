@@ -1,13 +1,19 @@
 import json
 import uuid
-import asyncio
 from datetime import datetime
-from typing import Dict, Any, Optional
 
-from ..domain.models import ResearchAgentRun, AgentStatus, ToolCall, ToolObservation, VerificationStatus, ResearchProject
-from .tools import TOOLS_SCHEMA, execute_tool
+from ..domain.models import (
+    AgentStatus,
+    ResearchAgentRun,
+    ResearchProject,
+    ToolCall,
+    ToolObservation,
+    VerificationStatus,
+)
 from .groq_client import call_groq_api
 from .logger import paperblast_logger as logger
+from .tools import TOOLS_SCHEMA, execute_tool
+
 
 async def tick_agent(run: ResearchAgentRun, project: ResearchProject) -> ResearchAgentRun:
     """
@@ -56,18 +62,21 @@ If you have sufficient evidence to conclude, output:
 
     try:
         messages = [{"role": "user", "content": history_text}]
-        response = await call_groq_api(messages, sys_prompt, json_mode=True)
+        response = await call_groq_api(messages, system_prompt=sys_prompt, response_format_json=True)
+        
+        if not isinstance(response, dict):
+            raise ValueError("AI returned non-JSON string")
         
         if response.get("action") == "tool_call":
-            tool_name = response.get("tool")
-            args = response.get("arguments", {})
-            
+            tool_name = str(response.get("tool"))
+            tool_args = response.get("arguments", {})
+
             tool_id = f"tool_{uuid.uuid4().hex[:6]}"
-            tc = ToolCall(tool_id=tool_id, name=tool_name, arguments=args)
+            tc = ToolCall(tool_id=tool_id, name=tool_name, arguments=tool_args)
             run.tool_calls.append(tc)
             
             # Execute deterministic tool
-            tool_result = execute_tool(tool_name, args, project)
+            tool_result = execute_tool(tool_name, tool_args, project)
             
             obs = ToolObservation(tool_id=tool_id, result=tool_result, is_error=False)
             run.observations.append(obs)

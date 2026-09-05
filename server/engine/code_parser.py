@@ -1,12 +1,13 @@
-import re
-import os
 import ast
-from typing import List, Dict, Any, Optional
+import os
+import re
+from typing import Any
+
 from .logger import paperblast_logger as logger
 
 
 class PythonCodeVisitor(ast.NodeVisitor):
-    def __init__(self, file_path: str, code_lines: List[str]):
+    def __init__(self, file_path: str, code_lines: list[str]):
         self.file_path = file_path
         self.code_lines = code_lines
         self.symbols = []
@@ -102,8 +103,15 @@ class PythonCodeVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def extract_code_symbols(files: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+def extract_code_symbols(files: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """
+    Extract AST symbols from all provided files. Files that fail to parse
+    produce an EXTRACTION_FAILED sentinel logged as a warning. Sentinels are
+    EXCLUDED from the returned symbol list — callers receive only real symbols
+    from successfully parsed files.
+    """
     symbols = []
+    failed_files = []
 
     for f in files:
         if not f or not f.get('content'):
@@ -111,21 +119,44 @@ def extract_code_symbols(files: List[Dict[str, str]]) -> List[Dict[str, Any]]:
 
         file_path = f.get('path', '')
         ext = os.path.splitext(file_path)[1].lower()
-        
+
         # Enforce size limits per file (5MB limit)
         if len(f['content']) > 5 * 1024 * 1024:
             continue
 
         if ext == '.py':
             py_symbols = parse_python_ast(f['content'], file_path)
-            symbols.extend(py_symbols)
+            # P0 FIX: Check for EXTRACTION_FAILED sentinels — do not mix into results
+            if py_symbols and is_extraction_failed(py_symbols[0]):
+                failed_files.append({
+                    'file': file_path,
+                    'error': py_symbols[0].get('value', 'unknown'),
+                    'extraction_status': 'FAILED'
+                })
+                logger.warn(
+                    f"Skipping failed parse for {file_path} — no symbols emitted",
+                    {'extraction_status': 'FAILED'}
+                )
+            else:
+                symbols.extend(py_symbols)
         elif ext in ['.js', '.ts', '.jsx', '.tsx', '.json', '.yaml', '.yml']:
             js_symbols = parse_js_or_config(f['content'], file_path)
             symbols.extend(js_symbols)
 
+    if failed_files:
+        logger.warn(
+            f"{len(failed_files)} file(s) failed AST parse and were excluded from analysis",
+            {'failed_files': [f['file'] for f in failed_files]}
+        )
+
     return symbols
 
-def parse_python_ast(code: str, file_path: str) -> List[Dict[str, Any]]:
+def parse_python_ast(code: str, file_path: str) -> list[dict[str, Any]]:
+    """
+    Parse Python source via AST. On SyntaxError returns a single EXTRACTION_FAILED
+    sentinel record — callers MUST check is_extraction_failed() and must NOT treat
+    degraded output as a verified parse. No regex fallback is applied.
+    """
     lines = code.split('\n')
     try:
         tree = ast.parse(code, filename=file_path)
@@ -133,15 +164,45 @@ def parse_python_ast(code: str, file_path: str) -> List[Dict[str, Any]]:
         visitor.visit(tree)
         return visitor.symbols
     except SyntaxError as e:
-        logger.warn(f"SyntaxError parsing Python file {file_path}", {"error": str(e)})
-        # Return DEGRADED_EXTRACTION via a special symbol or fallback to regex
-        # For resilience, we run the legacy regex fallback if AST completely fails
-        return parse_python_regex_fallback(code, file_path, extraction_status="PARTIAL")
+        logger.warn(
+            f"SyntaxError parsing Python file {file_path} — returning EXTRACTION_FAILED sentinel; "
+            f"downstream findings from this file are BLOCKED",
+            {"error": str(e)}
+        )
+        # P0 FIX: Do NOT fall back to regex. An invalid parse must not produce
+        # plausible-looking symbols. Return an explicit failure sentinel only.
+        return [{
+            'symbol': '__EXTRACTION_FAILED__',
+            'type': 'EXTRACTION_FAILED',
+            'value': f"SyntaxError: {e}",
+            'file': file_path,
+            'line': getattr(e, 'lineno', 0),
+            'col_offset': getattr(e, 'offset', 0),
+            'source_text': '',
+            'parent_context': None,
+            'extraction_status': 'FAILED',
+        }]
     except Exception as e:
         logger.error(f"Unexpected AST error on {file_path}", {"error": str(e)})
-        return []
+        return [{
+            'symbol': '__EXTRACTION_FAILED__',
+            'type': 'EXTRACTION_FAILED',
+            'value': f"UnexpectedError: {e}",
+            'file': file_path,
+            'line': 0,
+            'col_offset': 0,
+            'source_text': '',
+            'parent_context': None,
+            'extraction_status': 'FAILED',
+        }]
 
-def parse_python_regex_fallback(code: str, file_path: str, extraction_status: str = "PARTIAL") -> List[Dict[str, Any]]:
+
+def is_extraction_failed(symbol: dict[str, Any]) -> bool:
+    """Returns True if the symbol is an EXTRACTION_FAILED sentinel.
+    Callers must filter these out before building evidence or findings."""
+    return symbol.get('type') == 'EXTRACTION_FAILED'
+
+def parse_python_regex_fallback(code: str, file_path: str, extraction_status: str = "PARTIAL") -> list[dict[str, Any]]:
     symbols = []
     lines = code.split('\n')
     current_class = None
@@ -199,7 +260,7 @@ def parse_python_regex_fallback(code: str, file_path: str, extraction_status: st
 
     return symbols
 
-def parse_js_or_config(code: str, file_path: str) -> List[Dict[str, Any]]:
+def parse_js_or_config(code: str, file_path: str) -> list[dict[str, Any]]:
     symbols = []
     lines = code.split('\n')
 

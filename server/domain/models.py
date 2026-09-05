@@ -1,6 +1,7 @@
 import hashlib
 from enum import Enum
-from typing import List, Optional, Any, Dict, Union
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 SCHEMA_VERSION = "1.0.0"
@@ -74,8 +75,8 @@ class JobStatus(str, Enum):
 class JobRecord(BaseModel):
     jobId: str
     status: JobStatus = JobStatus.QUEUED
-    result: Optional[Any] = None
-    error: Optional[str] = None
+    result: Any | None = None
+    error: str | None = None
     createdAt: str
     updatedAt: str
 
@@ -93,7 +94,7 @@ class AgentStatus(str, Enum):
 class ToolCall(BaseModel):
     tool_id: str
     name: str
-    arguments: Dict[str, Any]
+    arguments: dict[str, Any]
 
 class ToolObservation(BaseModel):
     tool_id: str
@@ -107,14 +108,14 @@ class ResearchAgentRun(BaseModel):
     current_state: AgentStatus = AgentStatus.QUEUED
     iteration_count: int = 0
     max_iterations: int = 15
-    tool_calls: List[ToolCall] = Field(default_factory=list)
-    observations: List[ToolObservation] = Field(default_factory=list)
-    evidence_refs: List[str] = Field(default_factory=list)
-    current_conclusion: Optional[str] = None
+    tool_calls: list[ToolCall] = Field(default_factory=list)
+    observations: list[ToolObservation] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    current_conclusion: str | None = None
     status: VerificationStatus = VerificationStatus.UNABLE_TO_VERIFY
     skeptic_iterations: int = 0
     skeptic_max_iterations: int = 5
-    skeptic_observations: List[ToolObservation] = Field(default_factory=list)
+    skeptic_observations: list[ToolObservation] = Field(default_factory=list)
     created_at: str
     updated_at: str
 
@@ -132,7 +133,7 @@ def stable_id(typ: str, source: str, location: str) -> str:
     hashed = hashlib.sha1(inp.encode('utf-8')).hexdigest()[:12]
     return f"art_{hashed}"
 
-def content_hash(text: Optional[str]) -> Optional[str]:
+def content_hash(text: str | None) -> str | None:
     if not text:
         return None
     return hashlib.sha1(str(text).encode('utf-8')).hexdigest()[:16]
@@ -141,59 +142,59 @@ class ResearchArtifact(BaseModel):
     artifactId: str
     artifactType: ArtifactType
     source: str
-    filePath: Optional[str] = None
+    filePath: str | None = None
     exactLocation: str
     extractionStatus: ExtractionStatus = ExtractionStatus.OK
-    version: Optional[str] = None
-    contentHash: Optional[str] = None
+    version: str | None = None
+    contentHash: str | None = None
     
     # Code/Config fields
-    symbolName: Optional[str] = None
-    symbolKind: Optional[str] = None
-    extractedValue: Optional[str] = None
+    symbolName: str | None = None
+    symbolKind: str | None = None
+    extractedValue: str | None = None
     
     # Section fields
-    sectionId: Optional[str] = None
-    title: Optional[str] = None
-    startLine: Optional[int] = None
-    endLine: Optional[int] = None
+    sectionId: str | None = None
+    title: str | None = None
+    startLine: int | None = None
+    endLine: int | None = None
     
     # Equation fields
-    equationId: Optional[str] = None
-    label: Optional[str] = None
-    equationType: Optional[str] = None
+    equationId: str | None = None
+    label: str | None = None
+    equationType: str | None = None
     
     # Table fields
-    tableId: Optional[str] = None
-    caption: Optional[str] = None
+    tableId: str | None = None
+    caption: str | None = None
 
 class ArtifactIndex(BaseModel):
-    codeArtifacts: List[ResearchArtifact]
-    sectionArtifacts: List[ResearchArtifact]
-    equationArtifacts: List[ResearchArtifact]
-    tableArtifacts: List[ResearchArtifact]
-    all: List[ResearchArtifact]
+    codeArtifacts: list[ResearchArtifact]
+    sectionArtifacts: list[ResearchArtifact]
+    equationArtifacts: list[ResearchArtifact]
+    tableArtifacts: list[ResearchArtifact]
+    all: list[ResearchArtifact]
 
 class Evidence(BaseModel):
     evidenceId: str
-    sourceArtifactId: Optional[str] = None
-    targetArtifactId: Optional[str] = None
-    exactLocation: Optional[str] = None
-    extractedValue: Optional[str] = None
+    sourceArtifactId: str | None = None
+    targetArtifactId: str | None = None
+    exactLocation: str | None = None
+    extractedValue: str | None = None
     evidenceType: EvidenceType
     relationshipType: RelationshipType
     verification: VerificationStatus
     detail: str = ''
-    analysisVersion: Optional[str] = None
+    analysisVersion: str | None = None
     createdAt: str
 
 class EvidenceEdge(BaseModel):
     edgeId: str
     sourceLabel: str = ''
     targetLabel: str = ''
-    sourceArtifactId: Optional[str] = None
-    targetArtifactId: Optional[str] = None
-    evidenceIds: List[str] = Field(default_factory=list)
+    sourceArtifactId: str | None = None
+    targetArtifactId: str | None = None
+    evidenceIds: list[str] = Field(default_factory=list)
     verification: VerificationStatus = VerificationStatus.UNABLE_TO_VERIFY
     relationshipType: RelationshipType = RelationshipType.UNKNOWN
     detail: str = ''
@@ -201,35 +202,35 @@ class EvidenceEdge(BaseModel):
 class ImpactFinding(BaseModel):
     findingId: str
     changeReference: str = ''
-    affectedArtifactId: Optional[str] = None
-    affectedArtifactType: Optional[str] = None
+    affectedArtifactId: str | None = None
+    affectedArtifactType: str | None = None
     affectedTitle: str = ''
     status: VerificationStatus
     risk: str
     reason: str = ''
-    evidenceIds: List[str] = Field(default_factory=list)
-    evidencePath: List[str] = Field(default_factory=list)
+    evidenceIds: list[str] = Field(default_factory=list)
+    evidencePath: list[str] = Field(default_factory=list)
     hasEvidence: bool = False
-    analysisVersionId: Optional[str] = None
-    currentText: Optional[str] = None
-    suggestedText: Optional[str] = None
+    analysisVersionId: str | None = None
+    currentText: str | None = None
+    suggestedText: str | None = None
     createdAt: str
 
 class AnalysisVersion(BaseModel):
     versionId: str
     schemaVersion: str = SCHEMA_VERSION
     serverVersion: str
-    nodeVersion: Optional[str] = None
-    commitSha: Optional[str] = None
-    repoUrl: Optional[str] = None
+    nodeVersion: str | None = None
+    commitSha: str | None = None
+    repoUrl: str | None = None
     repoSnapshotHash: str
-    manuscriptId: Optional[str] = None
+    manuscriptId: str | None = None
     manuscriptHash: str
     symbolCount: int = 0
     sectionCount: int = 0
     createdAt: str
     state: AnalysisState = AnalysisState.CURRENT
-    staleReasons: Optional[List[str]] = None
+    staleReasons: list[str] | None = None
 
 class ProjectSummary(BaseModel):
     totalArtifacts: int = 0
@@ -239,10 +240,10 @@ class ProjectSummary(BaseModel):
     findingsNeedingReview: int = 0
 
 class ProjectArtifacts(BaseModel):
-    code: List[ResearchArtifact] = Field(default_factory=list)
-    sections: List[ResearchArtifact] = Field(default_factory=list)
-    equations: List[ResearchArtifact] = Field(default_factory=list)
-    tables: List[ResearchArtifact] = Field(default_factory=list)
+    code: list[ResearchArtifact] = Field(default_factory=list)
+    sections: list[ResearchArtifact] = Field(default_factory=list)
+    equations: list[ResearchArtifact] = Field(default_factory=list)
+    tables: list[ResearchArtifact] = Field(default_factory=list)
     total: int = 0
 
 class ResearchProject(BaseModel):
@@ -251,7 +252,7 @@ class ResearchProject(BaseModel):
     query: str = ''
     overallStatus: VerificationStatus = VerificationStatus.UNABLE_TO_VERIFY
     artifacts: ProjectArtifacts = Field(default_factory=ProjectArtifacts)
-    evidenceRecords: List[Evidence] = Field(default_factory=list)
-    findings: List[ImpactFinding] = Field(default_factory=list)
+    evidenceRecords: list[Evidence] = Field(default_factory=list)
+    findings: list[ImpactFinding] = Field(default_factory=list)
     summary: ProjectSummary = Field(default_factory=ProjectSummary)
     createdAt: str

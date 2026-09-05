@@ -1,12 +1,27 @@
 import time
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import Any
+
 from .models import (
-    ArtifactType, EvidenceType, RelationshipType, VerificationStatus,
-    ExtractionStatus, AnalysisState, SCHEMA_VERSION,
-    ResearchArtifact, ArtifactIndex, Evidence, EvidenceEdge, ImpactFinding,
-    AnalysisVersion, ResearchProject, ProjectArtifacts, ProjectSummary,
-    stable_id, content_hash, max_verification_for_evidence
+    SCHEMA_VERSION,
+    AnalysisState,
+    AnalysisVersion,
+    ArtifactIndex,
+    ArtifactType,
+    Evidence,
+    EvidenceEdge,
+    EvidenceType,
+    ExtractionStatus,
+    ImpactFinding,
+    ProjectArtifacts,
+    ProjectSummary,
+    RelationshipType,
+    ResearchArtifact,
+    ResearchProject,
+    VerificationStatus,
+    content_hash,
+    max_verification_for_evidence,
+    stable_id,
 )
 
 # Global sequences for ID generation
@@ -36,12 +51,12 @@ def next_version_id() -> str:
 # Artifact Factories
 # ---------------------------------------------------------------------------
 
-def code_artifact_from_symbol(sym: Dict[str, Any], repo_source: Optional[str] = None) -> ResearchArtifact:
+def code_artifact_from_symbol(sym: dict[str, Any], repo_source: str | None = None) -> ResearchArtifact:
     file_path = sym.get('file')
     line = sym.get('line')
     location = f"{file_path}:{line}"
     source = repo_source or file_path or "unknown"
-    art_id = stable_id(ArtifactType.CODE.value, source, location)
+    art_id = stable_id(ArtifactType.CODE.value, source, f"{location}:{sym.get('symbol')}:{sym.get('type')}")
     
     val = sym.get('value')
     extracted_val = str(val) if val is not None else None
@@ -59,12 +74,12 @@ def code_artifact_from_symbol(sym: Dict[str, Any], repo_source: Optional[str] = 
         extractionStatus=ExtractionStatus.OK
     )
 
-def config_artifact_from_symbol(sym: Dict[str, Any], repo_source: Optional[str] = None) -> ResearchArtifact:
+def config_artifact_from_symbol(sym: dict[str, Any], repo_source: str | None = None) -> ResearchArtifact:
     art = code_artifact_from_symbol(sym, repo_source)
     art.artifactType = ArtifactType.CONFIG
     return art
 
-def section_artifact(sec: Dict[str, Any], manuscript_source: Optional[str] = None) -> ResearchArtifact:
+def section_artifact(sec: dict[str, Any], manuscript_source: str | None = None) -> ResearchArtifact:
     source = manuscript_source or 'manuscript'
     sec_id = sec.get('id')
     art_id = stable_id(ArtifactType.SECTION.value, source, str(sec_id))
@@ -83,7 +98,7 @@ def section_artifact(sec: Dict[str, Any], manuscript_source: Optional[str] = Non
         extractionStatus=ExtractionStatus.OK
     )
 
-def equation_artifact(eq: Dict[str, Any], manuscript_source: Optional[str] = None) -> ResearchArtifact:
+def equation_artifact(eq: dict[str, Any], manuscript_source: str | None = None) -> ResearchArtifact:
     source = manuscript_source or 'manuscript'
     eq_id = eq.get('id')
     art_id = stable_id(ArtifactType.EQUATION.value, source, str(eq_id))
@@ -101,7 +116,7 @@ def equation_artifact(eq: Dict[str, Any], manuscript_source: Optional[str] = Non
         extractionStatus=ExtractionStatus.OK
     )
 
-def table_artifact(tbl: Dict[str, Any], manuscript_source: Optional[str] = None) -> ResearchArtifact:
+def table_artifact(tbl: dict[str, Any], manuscript_source: str | None = None) -> ResearchArtifact:
     source = manuscript_source or 'manuscript'
     tbl_id = tbl.get('id')
     art_id = stable_id(ArtifactType.TABLE.value, source, str(tbl_id))
@@ -119,7 +134,7 @@ def table_artifact(tbl: Dict[str, Any], manuscript_source: Optional[str] = None)
         extractionStatus=ExtractionStatus.OK
     )
 
-def build_artifact_index(code_symbols: List[Dict[str, Any]], paper_ast: Dict[str, Any], repo_source: Optional[str] = None, manuscript_source: Optional[str] = None) -> ArtifactIndex:
+def build_artifact_index(code_symbols: list[dict[str, Any]], paper_ast: dict[str, Any], repo_source: str | None = None, manuscript_source: str | None = None) -> ArtifactIndex:
     code_artifacts = []
     for sym in (code_symbols or []):
         if sym.get('type') == 'ConfigKey':
@@ -148,12 +163,12 @@ def build_artifact_index(code_symbols: List[Dict[str, Any]], paper_ast: Dict[str
 def make_evidence(
     evidenceType: EvidenceType,
     relationshipType: RelationshipType,
-    sourceArtifactId: Optional[str] = None,
-    targetArtifactId: Optional[str] = None,
-    exactLocation: Optional[str] = None,
-    extractedValue: Optional[str] = None,
+    sourceArtifactId: str | None = None,
+    targetArtifactId: str | None = None,
+    exactLocation: str | None = None,
+    extractedValue: str | None = None,
     detail: str = '',
-    analysisVersion: Optional[str] = None
+    analysisVersion: str | None = None
 ) -> Evidence:
     verification = max_verification_for_evidence(evidenceType)
     
@@ -172,9 +187,9 @@ def make_evidence(
     )
 
 def evidence_from_static_matches(
-    static_matches: List[Dict[str, Any]],
-    section_artifact_map: Dict[str, str],
-    symbol_key_to_artifact_id: Optional[Dict[str, str]],
+    static_matches: list[dict[str, Any]],
+    section_artifact_map: dict[str, str],
+    symbol_key_to_artifact_id: dict[str, str] | None,
     analysis_version: str
 ) -> dict:
     evidence_records = []
@@ -204,7 +219,7 @@ def evidence_from_static_matches(
         evidence_records.append(ev)
         
         import hashlib
-        edge_id = f"edge_{hashlib.sha1(f'{source_id}:{target_id}'.encode('utf-8')).hexdigest()[:10]}"
+        edge_id = f"edge_{hashlib.sha1(f'{source_id}:{target_id}'.encode()).hexdigest()[:10]}"
         
         edge = EvidenceEdge(
             edgeId=edge_id,
@@ -222,11 +237,11 @@ def evidence_from_static_matches(
     return {"evidenceRecords": evidence_records, "edges": edges}
 
 def evidence_from_ai_sections(
-    valid_sections: List[Dict[str, Any]],
-    section_artifact_map: Dict[str, str],
+    valid_sections: list[dict[str, Any]],
+    section_artifact_map: dict[str, str],
     query: str,
     analysis_version: str
-) -> List[Evidence]:
+) -> list[Evidence]:
     records = []
     for sec in (valid_sections or []):
         target_id = section_artifact_map.get(sec.get('section_id'))
@@ -251,14 +266,14 @@ def make_impact_finding(
     status: VerificationStatus,
     risk: str,
     changeReference: str = '',
-    affectedArtifactId: Optional[str] = None,
-    affectedArtifactType: Optional[str] = None,
+    affectedArtifactId: str | None = None,
+    affectedArtifactType: str | None = None,
     affectedTitle: str = '',
     reason: str = '',
-    evidenceIds: Optional[List[str]] = None,
-    analysisVersionId: Optional[str] = None,
-    currentText: Optional[str] = None,
-    suggestedText: Optional[str] = None
+    evidenceIds: list[str] | None = None,
+    analysisVersionId: str | None = None,
+    currentText: str | None = None,
+    suggestedText: str | None = None
 ) -> ImpactFinding:
     evidence_ids = evidenceIds or []
     
@@ -280,12 +295,12 @@ def make_impact_finding(
     )
 
 def findings_from_ai_sections(
-    valid_sections: List[Dict[str, Any]],
-    section_artifact_map: Dict[str, str],
-    ai_evidence_records: List[Evidence],
+    valid_sections: list[dict[str, Any]],
+    section_artifact_map: dict[str, str],
+    ai_evidence_records: list[Evidence],
     change_reference: str,
     analysis_version_id: str
-) -> List[ImpactFinding]:
+) -> list[ImpactFinding]:
     evidence_by_section = {}
     for ev in (ai_evidence_records or []):
         if ev.targetArtifactId:
@@ -319,12 +334,12 @@ def findings_from_ai_sections(
     return findings
 
 def findings_from_static_sections(
-    static_affected_sections: List[Dict[str, Any]],
-    section_artifact_map: Dict[str, str],
-    static_evidence_records: List[Evidence],
+    static_affected_sections: list[dict[str, Any]],
+    section_artifact_map: dict[str, str],
+    static_evidence_records: list[Evidence],
     change_reference: str,
     analysis_version_id: str
-) -> List[ImpactFinding]:
+) -> list[ImpactFinding]:
     evidence_by_artifact = {}
     for ev in (static_evidence_records or []):
         if ev.targetArtifactId:
@@ -355,7 +370,7 @@ def findings_from_static_sections(
 # Version Factories
 # ---------------------------------------------------------------------------
 
-def repo_snapshot_hash(code_symbols: List[Dict[str, Any]]) -> str:
+def repo_snapshot_hash(code_symbols: list[dict[str, Any]]) -> str:
     if not code_symbols:
         return 'empty'
     canonical = "|".join(
@@ -364,18 +379,18 @@ def repo_snapshot_hash(code_symbols: List[Dict[str, Any]]) -> str:
     import hashlib
     return hashlib.sha1(canonical.encode('utf-8')).hexdigest()[:16]
 
-def manuscript_hash(raw_text: Optional[str]) -> str:
+def manuscript_hash(raw_text: str | None) -> str:
     if not raw_text:
         return 'empty'
     import hashlib
     return hashlib.sha1(str(raw_text).encode('utf-8')).hexdigest()[:16]
 
 def make_analysis_version(
-    code_symbols: List[Dict[str, Any]],
-    paper_ast: Dict[str, Any],
-    server_version_info: Dict[str, Any],
-    repo_url: Optional[str] = None,
-    manuscript_id: Optional[str] = None
+    code_symbols: list[dict[str, Any]],
+    paper_ast: dict[str, Any],
+    server_version_info: dict[str, Any],
+    repo_url: str | None = None,
+    manuscript_id: str | None = None
 ) -> AnalysisVersion:
     repo_hash = repo_snapshot_hash(code_symbols)
     paper_hash = manuscript_hash(paper_ast.get('rawText'))
@@ -396,7 +411,7 @@ def make_analysis_version(
         state=AnalysisState.CURRENT
     )
 
-def check_staleness(previous_version: Dict[str, Any], current_code_symbols: List[Dict[str, Any]], current_paper_ast: Dict[str, Any]) -> dict:
+def check_staleness(previous_version: dict[str, Any], current_code_symbols: list[dict[str, Any]], current_paper_ast: dict[str, Any]) -> dict:
     reasons = []
     if not previous_version:
         return {"stale": False, "reasons": []}
@@ -424,8 +439,8 @@ def check_staleness(previous_version: Dict[str, Any], current_code_symbols: List
 def make_research_project(
     analysisVersion: AnalysisVersion,
     artifacts: ArtifactIndex,
-    evidenceRecords: List[Evidence],
-    findings: List[ImpactFinding],
+    evidenceRecords: list[Evidence],
+    findings: list[ImpactFinding],
     query: str = '',
     overallStatus: VerificationStatus = VerificationStatus.UNABLE_TO_VERIFY
 ) -> ResearchProject:

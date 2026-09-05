@@ -1,8 +1,8 @@
 from enum import Enum
+from typing import Any
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-import uuid
+
 
 class Role(str, Enum):
     OWNER = 'OWNER'
@@ -20,6 +20,7 @@ class PRStatus(str, Enum):
     OPEN = 'OPEN'
     APPROVED = 'APPROVED'
     REJECTED = 'REJECTED'
+    MERGED = 'MERGED'
 
 class InvitationStatus(str, Enum):
     PENDING = 'PENDING'
@@ -50,7 +51,7 @@ class Invitation(BaseModel):
 class Conversation(BaseModel):
     id: str
     project_id: str
-    owner_id: Optional[str] = None # can be a User ID or a Guest Session ID
+    owner_id: str | None = None # can be a User ID or a Guest Session ID
     visibility: ConversationVisibility = ConversationVisibility.PRIVATE
     title: str = "New Conversation"
     created_at: str
@@ -62,7 +63,14 @@ class ResearchPR(BaseModel):
     base_version_id: str
     proposed_version_id: str
     status: PRStatus = PRStatus.OPEN
+    analysis_status: str | None = None
+    analysis_result: dict[str, Any] | None = None
+    analysis_error: str | None = None
+    diff_summary: dict[str, Any] | None = None
+    base_file_count: int | None = None
+    proposed_file_count: int | None = None
     created_at: str
+    updated_at: str | None = None
 
 class Comment(BaseModel):
     id: str
@@ -84,5 +92,5 @@ class AuditEvent(BaseModel):
     project_id: str
     actor_id: str
     action: str # e.g. "invitation_sent", "member_added"
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
     created_at: str

@@ -1,5 +1,5 @@
-from typing import Dict, Any, List
-import json
+from typing import Any
+
 from ..domain.models import ResearchProject
 
 # Tool definitions (JSON Schema format compatible with typical LLM function calling)
@@ -79,7 +79,7 @@ TOOLS_SCHEMA = [
     }
 ]
 
-def execute_tool(tool_name: str, args: Dict[str, Any], project: ResearchProject) -> Any:
+def execute_tool(tool_name: str, args: dict[str, Any], project: ResearchProject) -> Any:
     """
     Dispatcher for explicit bounded tools.
     """
