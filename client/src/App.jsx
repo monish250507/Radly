@@ -126,7 +126,7 @@ export default function App() {
       const data = await safeFetchJson('/api/parse-paper', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paperText })
+        body: JSON.stringify({ documentBuffer: paperText, fileType: 'txt' })
       });
       setPaperAST(data.paperAST || { sections: [], equations: [], tables: [], numbers: [] });
     } catch (err) {
@@ -151,7 +151,7 @@ export default function App() {
           const data = await safeFetchJson('/api/parse-paper', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paperFileBase64: base64Data, fileType: ext })
+            body: JSON.stringify({ documentBuffer: base64Data, fileType: ext })
           });
           setPaperAST(data.paperAST || { sections: [], equations: [], tables: [], numbers: [] });
         } catch (err) {
@@ -179,7 +179,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ codeSymbols, paperAST, queryOrCodeChange: query })
       });
-      setAnalysis(data.analysis || null);
+      setAnalysis(data || null);
       setActiveTab('overview');
     } catch (err) {
       setErrorMsg(err.message);

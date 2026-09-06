@@ -156,38 +156,35 @@ async def _fetch_branch_files(repo_url: str, branch: str, timeout: float = 30.0)
     return code_files
 
 
-async def _build_diff_query(base_files: list[dict], proposed_files: list[dict], description: str) -> str:
+async def _build_diff_query(base_files: list[dict], proposed_files: list[dict], description: str) -> dict:
     """
     Build a deterministic diff summary from two file sets.
-    Compares file contents by path, returns a change description.
+    Compares file contents by path, returns a structured dictionary with hunks.
     """
+    import difflib
     base_map = {f['path']: f['content'] for f in base_files}
     prop_map = {f['path']: f['content'] for f in proposed_files}
 
     added = [p for p in prop_map if p not in base_map]
     removed = [p for p in base_map if p not in prop_map]
-    modified = [p for p in prop_map if p in base_map and base_map[p] != prop_map[p]]
+    modified = []
 
-    summary_parts = [f"PR Description: {description}"]
-    if added:
-        summary_parts.append(f"Files added ({len(added)}): {', '.join(added[:5])}")
-    if removed:
-        summary_parts.append(f"Files removed ({len(removed)}): {', '.join(removed[:5])}")
-    if modified:
-        summary_parts.append(f"Files modified ({len(modified)}): {', '.join(modified[:5])}")
-        # Add first meaningful diff snippet
-        for path in modified[:2]:
+    for path in prop_map:
+        if path in base_map and base_map[path] != prop_map[path]:
             base_lines = base_map[path].splitlines()
             prop_lines = prop_map[path].splitlines()
-            changes = [
-                f"  -{l}" for l in base_lines if l not in prop_lines
-            ][:5] + [
-                f"  +{l}" for l in prop_lines if l not in base_lines
-            ][:5]
-            if changes:
-                summary_parts.append(f"\nDiff in {path}:\n" + '\n'.join(changes))
+            hunks = list(difflib.unified_diff(base_lines, prop_lines, fromfile=f"a/{path}", tofile=f"b/{path}", lineterm=""))
+            modified.append({
+                "path": path,
+                "hunks": hunks[:50] # truncated for size
+            })
 
-    return '\n'.join(summary_parts)
+    return {
+        "description": description,
+        "added": added,
+        "removed": removed,
+        "modified": modified
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +239,7 @@ async def _run_pr_analysis(pr_id: str, req: CreatePRRequest, db):
         result = await calculate_blast_radius(
             code_symbols,
             paper_ast,
-            diff_query,
+            importlib.import_module("json").dumps(diff_query) if diff_query else req.change_description,
             {'repoUrl': req.proposed_repo_url}
         )
 

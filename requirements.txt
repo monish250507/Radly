@@ -5,3 +5,8 @@ httpx
 groq
 pytest
 python-dotenv
+
+pypdf
+python-docx
+asyncpg
+PyJWT

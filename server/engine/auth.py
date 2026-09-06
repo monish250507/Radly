@@ -1,23 +1,34 @@
-
+import os
+import jwt
 from fastapi import Depends, Header, HTTPException
 
 from ..domain.auth_models import Role, User
 from .persistence.db_adapter import get_db_provider
 
+JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_do_not_use_in_prod")
+JWT_ALGORITHM = "HS256"
 
-# Mock JWT decode for local dev
 async def get_current_user_or_guest(authorization: str | None = Header(None)) -> User | None:
     """
-    If 'Bearer user_<id>' is passed, returns the User.
+    Validates JWT token. If valid, returns the User.
     Otherwise returns None (Guest).
     """
     if not authorization or not authorization.startswith("Bearer "):
         return None
         
     token = authorization.split(" ")[1]
-    # In a real app, verify JWT signature here
-    # Mock: token is just the email for testing
-    email = token
+    
+    try:
+        # P1 FIX: Validate signature, issuer, and audience
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], audience="paperblast", issuer="paperblast_auth")
+        email = payload.get("email")
+        if not email:
+            return None
+    except jwt.PyJWTError as e:
+        import logging
+        logging.warning(f"JWT Validation failed: {str(e)}")
+        return None
+
     db = get_db_provider()
     user = await db.get_user_by_email(email)
     return user

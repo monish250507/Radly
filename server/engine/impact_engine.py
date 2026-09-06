@@ -574,6 +574,61 @@ Return a JSON object. Only include sections you can provide a substantiated reas
         overallStatus=overall_status
     )
 
+    # P0 FIX: Run Agent and Skeptic loops
+    import uuid
+    from datetime import datetime
+    from .agent_runner import tick_agent
+    from .skeptic_runner import tick_skeptic
+    from ..domain.models import AgentStatus, ResearchAgentRun
+
+    run = ResearchAgentRun(
+        run_id=f"run_{uuid.uuid4().hex[:8]}",
+        project_id="tmp_proj",
+        goal=f"Determine blast radius of: {query_or_code_change}",
+        created_at=datetime.utcnow().isoformat() + "Z",
+        updated_at=datetime.utcnow().isoformat() + "Z"
+    )
+
+    try:
+        for _ in range(3):
+            run = await tick_agent(run, domain_project)
+            if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED, AgentStatus.NEEDS_REVIEW]: break
+        if run.current_state in [AgentStatus.COMPLETED, AgentStatus.NEEDS_REVIEW]:
+            for _ in range(2):
+                run = await tick_skeptic(run, domain_project)
+                if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED]: break
+    except Exception as err:
+        logger.warn('Agent execution failed', {'reason': str(err)})
+
+    trace = []
+    for i, obs in enumerate(run.observations):
+        trace.append({
+            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'agent': 'RESEARCH_ORCHESTRATOR',
+            'action': f"Tool Call: {obs.tool_id}",
+            'detail': str(obs.result)[:200]
+        })
+    if run.current_conclusion:
+        trace.append({
+            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'agent': 'RESEARCH_ORCHESTRATOR',
+            'action': 'CONCLUDED',
+            'detail': run.current_conclusion
+        })
+    for i, obs in enumerate(run.skeptic_observations):
+        trace.append({
+            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'agent': 'SKEPTIC_ARBITER',
+            'action': f"Review Tool: {obs.tool_id}",
+            'detail': str(obs.result)[:200]
+        })
+
+    if not trace:
+        trace = build_honest_agent_trace(
+            len(code_symbols or []), len(sections), len(equations), len(static_matches),
+            'ai_synthesized', len(valid_sections), len(invalid_sections)
+        )
+
     return {
         'status': overall_status.value if hasattr(overall_status, 'value') else overall_status,
         'engine': {
@@ -585,7 +640,6 @@ Return a JSON object. Only include sections you can provide a substantiated reas
                 'tables_accepted': len(valid_tables)
             }
         },
-        # P0 FIX: overall_impact_score removed — no uncalibrated 0-100 percentage
         'risk_level': risk_level,
         'execution_time_ms': int((time.time() - start_time) * 1000),
         'impact_summary': {
@@ -596,16 +650,7 @@ Return a JSON object. Only include sections you can provide a substantiated reas
         'affected_sections': valid_sections,
         'affected_equations': valid_equations,
         'affected_tables': valid_tables,
-        # P0 FIX: lineage from deterministic static_matches only (all NEEDS_REVIEW)
         'lineage_graph': lineage_graph,
-        'agent_collaboration_trace': build_honest_agent_trace(
-            len(code_symbols or []),
-            len(sections),
-            len(equations),
-            len(static_matches),
-            'ai_synthesized',
-            len(valid_sections),
-            len(invalid_sections)
-        ),
+        'agent_collaboration_trace': trace,
         'domain': domain_project.model_dump()
     }

@@ -84,14 +84,14 @@ async def start_analysis_job(req: AnalyzeRequest, background_tasks: BackgroundTa
     A job only reaches READY after the actual stages complete.
     Stages: symbol extraction → paper parsing → impact analysis.
     """
-    job_id = create_job()
+    job_id = await create_job()
 
     async def process_job():
-        update_job_status(job_id, JobStatus.PROCESSING, progress="stage:extract_symbols")
+        await update_job_status(job_id, JobStatus.PROCESSING, progress="stage:extract_symbols")
         try:
             # Stage 1: Extract code symbols from provided files
             code_symbols = extract_code_symbols(req.files) if req.files else []
-            update_job_status(job_id, JobStatus.PROCESSING, progress="stage:parse_paper")
+            await update_job_status(job_id, JobStatus.PROCESSING, progress="stage:parse_paper")
 
             # Stage 2: Parse paper structure from provided paper content
             paper_content = req.paper.get("content", "") if req.paper else ""
@@ -101,12 +101,12 @@ async def start_analysis_job(req: AnalyzeRequest, background_tasks: BackgroundTa
                 paper_ast = parse_paper_structure(raw_text)
             else:
                 paper_ast = {"sections": [], "equations": [], "tables": [], "claims": []}
-            update_job_status(job_id, JobStatus.PROCESSING, progress="stage:calculate_impact")
+            await update_job_status(job_id, JobStatus.PROCESSING, progress="stage:calculate_impact")
 
             # Stage 3: Run deterministic impact analysis
             change_query = req.changeQuery or ""
             if not change_query:
-                update_job_status(
+                await update_job_status(
                     job_id, JobStatus.FAILED,
                     error="changeQuery is required for impact analysis. Provide a code diff, PR description, or change description."
                 )
@@ -119,35 +119,22 @@ async def start_analysis_job(req: AnalyzeRequest, background_tasks: BackgroundTa
                 req.options or {}
             )
 
-            update_job_status(job_id, JobStatus.READY, result=result)
+            await update_job_status(job_id, JobStatus.READY, result=result)
 
         except Exception as e:
             logger.error("Job pipeline failed", {"job_id": job_id, "error": str(e)})
-            update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            await update_job_status(job_id, JobStatus.FAILED, error=str(e))
 
     background_tasks.add_task(process_job)
     return {"jobId": job_id}
 
 
 @app.get("/api/jobs/{job_id}")
-def get_job_status(job_id: str):
-    job = get_job(job_id)
+async def get_job_status(job_id: str):
+    job = await get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
-
-
-@app.get("/api/health")
-async def health():
-    """Production health check endpoint. Returns service status and version."""
-    from datetime import datetime
-    return {
-        "status": "ok",
-        "service": "paperblast",
-        "version": "1.1.0",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "schema_version": SCHEMA_VERSION,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -212,19 +199,6 @@ class AnalyzeImpactRequest(BaseModel):
     paperAST: dict[str, Any]
     queryOrCodeChange: str
     opts: dict[str, Any] | None = None
-
-@app.middleware("http")
-async def add_request_context(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration_ms = int((time.time() - start_time) * 1000)
-    logger.info("request completed", {
-        "method": request.method,
-        "path": request.url.path,
-        "statusCode": response.status_code,
-        "durationMs": duration_ms
-    })
-    return response
 
 @app.post("/api/ingest-github")
 async def ingest_github(req: IngestGithubRequest):

@@ -112,47 +112,92 @@ class PostgresAdapter(DatabaseProvider):
 
     def __init__(self, database_url: str):
         self.database_url = database_url
-        # TODO: initialise asyncpg pool here:
-        # import asyncpg
-        # self._pool = await asyncpg.create_pool(database_url)
-        raise NotImplementedError(
-            "PostgresAdapter is not yet fully implemented. "
-            "Either implement the adapter methods or unset DATABASE_URL to use "
-            "InMemoryAdapter for local development."
-        )
+        self._pool = None
+
+    async def _get_pool(self):
+        if not self._pool:
+            import asyncpg
+            self._pool = await asyncpg.create_pool(self.database_url)
+            # Ensure schema exists
+            async with self._pool.acquire() as conn:
+                await conn.execute('''
+                    CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, created_at TEXT);
+                    CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY);
+                    CREATE TABLE IF NOT EXISTS project_memberships (user_id TEXT, project_id TEXT, role TEXT, created_at TEXT, PRIMARY KEY(user_id, project_id));
+                    CREATE TABLE IF NOT EXISTS invitations (token TEXT PRIMARY KEY, project_id TEXT, role TEXT, email TEXT, status TEXT, expires_at TEXT, created_at TEXT);
+                    CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, project_id TEXT, owner_id TEXT, visibility TEXT, title TEXT, created_at TEXT);
+                    CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, project_id TEXT, actor_id TEXT, action TEXT, details TEXT, created_at TEXT);
+                ''')
+        return self._pool
 
     async def get_user_by_email(self, email: str) -> User | None:
-        raise NotImplementedError("Implement with asyncpg: SELECT * FROM users WHERE email=$1")
+        pool = await self._get_pool()
+        row = await pool.fetchrow("SELECT id, email, created_at FROM users WHERE email=$1", email)
+        if row: return User(id=row['id'], email=row['email'], created_at=row['created_at'])
+        return None
 
     async def create_user(self, email: str) -> User:
-        raise NotImplementedError("Implement with asyncpg: INSERT INTO users ...")
+        pool = await self._get_pool()
+        uid = f"usr_{uuid.uuid4().hex[:8]}"
+        created_at = datetime.utcnow().isoformat()
+        await pool.execute("INSERT INTO users (id, email, created_at) VALUES ($1, $2, $3)", uid, email, created_at)
+        return User(id=uid, email=email, created_at=created_at)
 
     async def create_project(self) -> str:
-        raise NotImplementedError("Implement with asyncpg: INSERT INTO projects ...")
+        pool = await self._get_pool()
+        pid = f"proj_{uuid.uuid4().hex[:8]}"
+        await pool.execute("INSERT INTO projects (id) VALUES ($1)", pid)
+        return pid
 
     async def get_project_membership(self, user_id: str, project_id: str) -> ProjectMembership | None:
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        row = await pool.fetchrow("SELECT user_id, project_id, role, created_at FROM project_memberships WHERE user_id=$1 AND project_id=$2", user_id, project_id)
+        if row: return ProjectMembership(user_id=row['user_id'], project_id=row['project_id'], role=Role(row['role']), created_at=row['created_at'])
+        return None
 
     async def add_project_member(self, user_id: str, project_id: str, role: Role) -> ProjectMembership:
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        created_at = datetime.utcnow().isoformat()
+        await pool.execute("INSERT INTO project_memberships (user_id, project_id, role, created_at) VALUES ($1, $2, $3, $4)", user_id, project_id, role.value, created_at)
+        return ProjectMembership(user_id=user_id, project_id=project_id, role=role, created_at=created_at)
 
     async def create_invitation(self, inv: Invitation) -> Invitation:
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        await pool.execute("INSERT INTO invitations (token, project_id, role, email, status, expires_at, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            inv.token, inv.project_id, inv.role.value, inv.email, inv.status.value, inv.expires_at, inv.created_at)
+        return inv
 
     async def get_invitation(self, token: str) -> Invitation | None:
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        row = await pool.fetchrow("SELECT * FROM invitations WHERE token=$1", token)
+        if row:
+            from ...domain.auth_models import InvitationStatus
+            return Invitation(token=row['token'], project_id=row['project_id'], role=Role(row['role']), email=row['email'], status=InvitationStatus(row['status']), expires_at=row['expires_at'], created_at=row['created_at'])
+        return None
 
     async def update_invitation(self, inv: Invitation):
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        await pool.execute("UPDATE invitations SET status=$1 WHERE token=$2", inv.status.value, inv.token)
 
     async def create_conversation(self, conv: Conversation) -> Conversation:
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        await pool.execute("INSERT INTO conversations (id, project_id, owner_id, visibility, title, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
+            conv.id, conv.project_id, conv.owner_id, conv.visibility.value, conv.title, conv.created_at)
+        return conv
 
     async def get_conversation(self, conv_id: str) -> Conversation | None:
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        row = await pool.fetchrow("SELECT * FROM conversations WHERE id=$1", conv_id)
+        if row:
+            from ...domain.auth_models import ConversationVisibility
+            return Conversation(id=row['id'], project_id=row['project_id'], owner_id=row['owner_id'], visibility=ConversationVisibility(row['visibility']), title=row['title'], created_at=row['created_at'])
+        return None
 
     async def log_audit(self, event: AuditEvent):
-        raise NotImplementedError("Implement with asyncpg")
+        pool = await self._get_pool()
+        import json
+        await pool.execute("INSERT INTO audit_events (id, project_id, actor_id, action, details, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
+            event.id, event.project_id, event.actor_id, event.action, json.dumps(event.details), event.created_at)
 
 
 # ---------------------------------------------------------------------------

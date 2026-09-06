@@ -29,7 +29,10 @@ export default function ChangeConsole({
   symbolsCount,
   sectionsCount,
   selectedFileName,
-}) {
+})
+
+
+{
   const canAnalyse = query.trim().length > 0 && !isAnalyzing;
 
   return (
