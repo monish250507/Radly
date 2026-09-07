@@ -66,17 +66,6 @@ TOOLS_SCHEMA = [
             "required": ["artifact_id"]
         }
     },
-    {
-        "name": "SkepticArbiter",
-        "description": "Call the Skeptic to review the current conclusion and check for missing evidence or hallucinations.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "conclusion": {"type": "string", "description": "The current drafted conclusion to review."}
-            },
-            "required": ["conclusion"]
-        }
-    }
 ]
 
 def execute_tool(tool_name: str, args: dict[str, Any], project: ResearchProject) -> Any:

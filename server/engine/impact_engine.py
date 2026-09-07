@@ -597,6 +597,13 @@ Return a JSON object. Only include sections you can provide a substantiated reas
             for _ in range(2):
                 run = await tick_skeptic(run, domain_project)
                 if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED]: break
+
+        if run.status in [VerificationStatus.REJECTED, VerificationStatus.UNABLE_TO_VERIFY, VerificationStatus.CONFLICTING_EVIDENCE]:
+            for sec in valid_sections:
+                sec['verification'] = VerificationStatus.UNABLE_TO_VERIFY.value
+        elif run.status == VerificationStatus.NEEDS_REVIEW:
+            for sec in valid_sections:
+                sec['verification'] = VerificationStatus.NEEDS_REVIEW.value
     except Exception as err:
         logger.warn('Agent execution failed', {'reason': str(err)})
 
