@@ -126,7 +126,7 @@ export default function ImpactHeader({
         </button>
 
         <a
-          href="https://github.com/monish250507/Research_Blast_Radius"
+          href="https://github.com/monish250507/Radly"
           target="_blank" rel="noopener noreferrer"
           className="neo-btn hidden sm:flex items-center gap-2 text-xs bg-[var(--box-bg)] text-[var(--box-text)] hover:bg-[var(--tab-hover)] border border-[var(--border-color)]"
         >

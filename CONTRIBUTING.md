@@ -43,8 +43,8 @@ We are committed to providing a friendly, safe, and welcoming environment for ev
 
 1. **Fork and Clone the Repository**:
    ```bash
-   git clone https://github.com/<your-username>/Research_Blast_Radius.git
-   cd Research_Blast_Radius
+   git clone https://github.com/<your-username>/Radly.git
+   cd Radly
    ```
 
 2. **Set Up Python Virtual Environment**:

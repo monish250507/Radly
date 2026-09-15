@@ -17,7 +17,7 @@ license: mit
 
 *Map Git diffs directly to downstream scientific impact in research manuscripts with mathematical rigor.*
 
-[![CI](https://github.com/monish250507/Research_Blast_Radius/actions/workflows/ci.yml/badge.svg)](https://github.com/monish250507/Research_Blast_Radius/actions/workflows/ci.yml)
+[![CI](https://github.com/monish250507/Radly/actions/workflows/ci.yml/badge.svg)](https://github.com/monish250507/Radly/actions/workflows/ci.yml)
 [![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
@@ -116,8 +116,8 @@ graph TD
 ### 1. Clone & Setup Environment
 
 ```bash
-git clone https://github.com/monish250507/Research_Blast_Radius.git
-cd Research_Blast_Radius
+git clone https://github.com/monish250507/Radly.git
+cd Radly
 
 # Set up Python virtual environment
 python -m venv venv

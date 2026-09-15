@@ -20,4 +20,4 @@ Expected Impact: Eliminates manual paper-code proofreading, prevents peer-review
 ### Project Links:
 - **Live Production URL**: [https://radly.vercel.app](https://radly.vercel.app)
 - **YouTube Demo Video**: [https://youtu.be/iAgQBcwuMZU](https://youtu.be/iAgQBcwuMZU?si=WBNU0XGO803-UskE)
-- **GitHub Repository**: [https://github.com/monish250507/Research_Blast_Radius](https://github.com/monish250507/Research_Blast_Radius)
+- **GitHub Repository**: [https://github.com/monish250507/Radly](https://github.com/monish250507/Radly)
