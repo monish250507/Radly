@@ -2,23 +2,15 @@
   "name": "paperblast-impact-analyzer",
   "version": "1.0.0",
   "description": "Research Code & Paper Impact Analyzer - Bipartite AST & Blast Radius Engine",
-  "main": "server/index.js",
   "type": "module",
   "scripts": {
-    "server": ".\\\\venv\\\\Scripts\\\\uvicorn server.main:app --host 0.0.0.0 --port 5000",
+    "server": "uvicorn server.main:app --host 0.0.0.0 --port 5000",
     "client": "vite client --host",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "vite build client --outDir ../dist",
-    "test": ".\\\\venv\\\\Scripts\\\\pytest server/tests/"
+    "test": "pytest server/tests/"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jszip": "^3.10.1",
-    "mammoth": "^1.8.0",
-    "node-fetch": "^3.3.2",
-    "pdf-parse": "^1.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

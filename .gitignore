@@ -12,3 +12,17 @@ _legacy_python/
 venv/
 __pycache__/
 *.pyc
+
+# Local Databases
+*.db
+*.sqlite
+*.sqlite3
+rbr_local.db
+
+# Test Artifacts & Caches
+.pytest_cache/
+.coverage
+htmlcov/
+real_paper_lora.pdf
+*.zip
+

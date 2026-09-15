@@ -4,6 +4,7 @@ pydantic
 httpx
 groq
 pytest
+pytest-asyncio
 python-dotenv
 
 pypdf

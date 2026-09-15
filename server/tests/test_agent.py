@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
@@ -31,12 +31,13 @@ async def test_agent_multi_step_success(mock_groq):
     ]
     
     project = make_dummy_project()
+    now_iso = datetime.now(timezone.utc).isoformat()
     run = ResearchAgentRun(
         run_id="run_1",
         project_id="p1",
         goal="What happens if I change learning_rate?",
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat()
+        created_at=now_iso,
+        updated_at=now_iso
     )
     
     # Tick 1
@@ -68,8 +69,8 @@ async def test_agent_iteration_limit():
         project_id="p1",
         goal="Infinite loop test",
         max_iterations=2,
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat()
+        created_at=datetime.now(timezone.utc).isoformat(),
+        updated_at=datetime.now(timezone.utc).isoformat()
     )
     
     # Force state machine limit
@@ -89,8 +90,8 @@ async def test_agent_malformed_tool_call(mock_groq):
         run_id="run_3",
         project_id="p1",
         goal="Test error recovery",
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat()
+        created_at=datetime.now(timezone.utc).isoformat(),
+        updated_at=datetime.now(timezone.utc).isoformat()
     )
     
     run = await tick_agent(run, project)

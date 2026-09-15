@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from server.domain.models import (
     AnalysisVersion,
@@ -42,9 +42,10 @@ def make_dummy_project() -> ResearchProject:
         sections=[art_section, art_claim, art_metric]
     )
     
-    av = AnalysisVersion(versionId="v1", serverVersion="1", repoSnapshotHash="h1", manuscriptHash="h2", createdAt=datetime.utcnow().isoformat())
+    now_iso = datetime.now(timezone.utc).isoformat()
+    av = AnalysisVersion(versionId="v1", serverVersion="1", repoSnapshotHash="h1", manuscriptHash="h2", createdAt=now_iso)
     
-    p = ResearchProject(projectId="p1", analysisVersion=av, artifacts=arts, createdAt=datetime.utcnow().isoformat())
+    p = ResearchProject(projectId="p1", analysisVersion=av, artifacts=arts, createdAt=now_iso)
     return p
 
 

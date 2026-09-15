@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..domain.models import (
     AgentStatus,
@@ -15,7 +15,7 @@ from .logger import paperblast_logger as logger
 from .tools import TOOLS_SCHEMA, execute_tool
 
 
-async def tick_agent(run: ResearchAgentRun, project: ResearchProject) -> ResearchAgentRun:
+async def tick_agent(run: ResearchAgentRun, project: ResearchProject, call_groq_fn=None) -> ResearchAgentRun:
     """
     Executes one step of the bounded agent state machine.
     """
@@ -25,7 +25,7 @@ async def tick_agent(run: ResearchAgentRun, project: ResearchProject) -> Researc
     if run.iteration_count >= run.max_iterations:
         run.current_state = AgentStatus.FAILED
         run.current_conclusion = "Max iterations reached without conclusion."
-        run.updated_at = datetime.utcnow().isoformat() + "Z"
+        run.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         return run
 
     run.current_state = AgentStatus.RUNNING
@@ -62,7 +62,8 @@ If you have sufficient evidence to conclude, output:
 
     try:
         messages = [{"role": "user", "content": history_text}]
-        response = await call_groq_api(messages, system_prompt=sys_prompt, response_format_json=True)
+        llm_fn = call_groq_fn or call_groq_api
+        response = await llm_fn(messages, system_prompt=sys_prompt, response_format_json=True)
         
         if not isinstance(response, dict):
             raise ValueError("AI returned non-JSON string")
@@ -91,7 +92,7 @@ If you have sufficient evidence to conclude, output:
             except ValueError:
                 run.status = VerificationStatus.NEEDS_REVIEW
                 
-            run.evidence_refs = response.get("evidence_refs", [])
+            run.evidence_refs = response.get("evidence_refs") or response.get("evidence") or []
             run.current_state = AgentStatus.WAITING_FOR_SKEPTIC
             
         else:
@@ -106,5 +107,5 @@ If you have sufficient evidence to conclude, output:
         logger.error("Agent tick failed", {"error": str(e)})
         run.observations.append(ToolObservation(tool_id="sys", result={"error": str(e)}, is_error=True))
 
-    run.updated_at = datetime.utcnow().isoformat() + "Z"
+    run.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     return run

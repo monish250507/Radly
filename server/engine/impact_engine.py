@@ -2,7 +2,7 @@ import json
 import re
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ..domain.factories import (
@@ -20,6 +20,7 @@ from ..domain.models import (
     ResearchProject,
     VerificationStatus,
 )
+from .config import config
 from .groq_client import call_groq_api
 from .logger import paperblast_logger as logger
 from .status_model import derive_risk_level, resolve_overall_status
@@ -72,7 +73,7 @@ def compare_graphs(base_project: ResearchProject, proposed_project: ResearchProj
                 risk="HIGH" if art.artifactType in [ArtifactType.CLAIM, ArtifactType.RESULT] else "LOW",
                 reason=f"Impacted by upstream change in {path[0]}" if path else "Directly changed",
                 evidencePath=path + [art_id],
-                createdAt=datetime.utcnow().isoformat() + "Z"
+                createdAt=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
             findings.append(finding)
             
@@ -191,6 +192,12 @@ def validate_ai_sections(ai_sections: list[Any], paper_ast: dict[str, Any]) -> t
 
         section_id = item.get('section_id')
         resolved_section = section_index.get(section_id)
+
+        if not resolved_section and item.get('title'):
+            for s in sections:
+                if s.get('title', '').strip().lower() == item.get('title', '').strip().lower():
+                    resolved_section = s
+                    break
 
         if not resolved_section:
             invalid.append({'item': item, 'reason': 'section_id_not_in_paperAST', 'section_id': section_id})
@@ -341,7 +348,7 @@ async def calculate_blast_radius(code_symbols: List[Dict[str, Any]], paper_ast: 
     artifact_index = build_artifact_index(code_symbols, paper_ast, repo_url, manuscript_id)
     section_artifact_map = {a.sectionId: a.artifactId for a in artifact_index.sectionArtifacts if a.sectionId}
     
-    server_info = {"version": "1.0.0"} # mock
+    server_info = {"version": config.Service.VERSION, "service": config.Service.NAME}
     analysis_version = make_analysis_version(code_symbols, paper_ast, server_info, repo_url, manuscript_id)
 
     static_matches = match_symbols_to_paper(code_symbols, paper_ast, query_or_code_change)
@@ -585,46 +592,101 @@ Return a JSON object. Only include sections you can provide a substantiated reas
         run_id=f"run_{uuid.uuid4().hex[:8]}",
         project_id="tmp_proj",
         goal=f"Determine blast radius of: {query_or_code_change}",
-        created_at=datetime.utcnow().isoformat() + "Z",
-        updated_at=datetime.utcnow().isoformat() + "Z"
+        created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        updated_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
 
     try:
         for _ in range(3):
-            run = await tick_agent(run, domain_project)
-            if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED, AgentStatus.NEEDS_REVIEW]: break
-        if run.current_state in [AgentStatus.COMPLETED, AgentStatus.NEEDS_REVIEW]:
-            for _ in range(2):
-                run = await tick_skeptic(run, domain_project)
-                if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED]: break
+            run = await tick_agent(run, domain_project, call_groq_fn=call_groq_api)
+            if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED, AgentStatus.NEEDS_REVIEW, AgentStatus.WAITING_FOR_SKEPTIC]:
+                break
 
-        if run.status in [VerificationStatus.REJECTED, VerificationStatus.UNABLE_TO_VERIFY, VerificationStatus.CONFLICTING_EVIDENCE]:
+        if run.current_state in [AgentStatus.COMPLETED, AgentStatus.NEEDS_REVIEW, AgentStatus.WAITING_FOR_SKEPTIC]:
+            for _ in range(2):
+                run = await tick_skeptic(run, domain_project, call_groq_fn=call_groq_api)
+                if run.current_state in [AgentStatus.COMPLETED, AgentStatus.FAILED, AgentStatus.CANCELLED]:
+                    break
+
+        # P0-1 FIX: Authoritative Skeptic verification hard-gating.
+        # Agent conclusion → Skeptic review → accepted/rejected/needs-review state → final finding status.
+        # A rejected finding must never surface as VERIFIED.
+        skeptic_evaluated = (
+            run.current_state == AgentStatus.COMPLETED or
+            len(run.skeptic_observations) > 0 or
+            (run.current_conclusion is not None and "[Skeptic Verdict:" in run.current_conclusion)
+        )
+
+        if run.status == VerificationStatus.REJECTED:
+            overall_status = VerificationStatus.REJECTED
+            for sec in valid_sections:
+                sec['verification'] = VerificationStatus.REJECTED.value
+                sec['status'] = VerificationStatus.REJECTED.value
+            for f in domain_project.findings:
+                f.status = VerificationStatus.REJECTED
+                f.reason = f"Rejected by Skeptic verification: {run.current_conclusion}"
+        elif run.status == VerificationStatus.CONFLICTING_EVIDENCE:
+            overall_status = VerificationStatus.CONFLICTING_EVIDENCE
+            for sec in valid_sections:
+                sec['verification'] = VerificationStatus.CONFLICTING_EVIDENCE.value
+                sec['status'] = VerificationStatus.CONFLICTING_EVIDENCE.value
+            for f in domain_project.findings:
+                f.status = VerificationStatus.CONFLICTING_EVIDENCE
+        elif skeptic_evaluated and run.status == VerificationStatus.UNABLE_TO_VERIFY:
+            overall_status = VerificationStatus.UNABLE_TO_VERIFY
             for sec in valid_sections:
                 sec['verification'] = VerificationStatus.UNABLE_TO_VERIFY.value
+                sec['status'] = VerificationStatus.UNABLE_TO_VERIFY.value
+            for f in domain_project.findings:
+                if f.status == VerificationStatus.VERIFIED:
+                    f.status = VerificationStatus.UNABLE_TO_VERIFY
         elif run.status == VerificationStatus.NEEDS_REVIEW:
+            overall_status = VerificationStatus.NEEDS_REVIEW
             for sec in valid_sections:
                 sec['verification'] = VerificationStatus.NEEDS_REVIEW.value
+                sec['status'] = VerificationStatus.NEEDS_REVIEW.value
+            for f in domain_project.findings:
+                if f.status == VerificationStatus.VERIFIED:
+                    f.status = VerificationStatus.NEEDS_REVIEW
+        elif run.status == VerificationStatus.VERIFIED:
+            # Only findings with deterministic evidence can remain VERIFIED
+            for f in domain_project.findings:
+                if not f.hasEvidence:
+                    f.status = VerificationStatus.NEEDS_REVIEW
+
+        domain_project.overallStatus = overall_status
+
+        # P1-3 FIX: Persist the complete research/evidence domain
+        try:
+            from .persistence.db_adapter import get_db_provider
+            db = get_db_provider()
+            await db.save_research_project(domain_project)
+            await db.save_findings(analysis_version.versionId, domain_project.findings)
+            await db.save_evidence(analysis_version.versionId, domain_project.evidenceRecords)
+            await db.save_agent_run(run)
+        except Exception as db_err:
+            logger.warn("Could not persist research evidence domain to database", {"error": str(db_err)})
     except Exception as err:
         logger.warn('Agent execution failed', {'reason': str(err)})
 
     trace = []
     for i, obs in enumerate(run.observations):
         trace.append({
-            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             'agent': 'RESEARCH_ORCHESTRATOR',
             'action': f"Tool Call: {obs.tool_id}",
             'detail': str(obs.result)[:200]
         })
     if run.current_conclusion:
         trace.append({
-            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             'agent': 'RESEARCH_ORCHESTRATOR',
             'action': 'CONCLUDED',
             'detail': run.current_conclusion
         })
     for i, obs in enumerate(run.skeptic_observations):
         trace.append({
-            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             'agent': 'SKEPTIC_ARBITER',
             'action': f"Review Tool: {obs.tool_id}",
             'detail': str(obs.result)[:200]

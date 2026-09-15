@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .config import config
 
@@ -8,7 +8,7 @@ from .config import config
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_entry = {
-            "ts": datetime.utcnow().isoformat() + "Z",
+            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "level": record.levelname.lower(),
             "service": config.Service.NAME,
             "env": config.ENV,

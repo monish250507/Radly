@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from typing import Any
 
@@ -15,8 +16,14 @@ class UpstreamError(Exception):
         self.code = code
 
 GROQ_MODELS = [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-70b-versatile'
+    m for m in [
+        os.environ.get('RBR_LLM_MODEL', '').strip(),
+        'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b',
+        'groq/compound-mini',
+        'groq/compound',
+        'qwen/qwen3.6-27b',
+    ] if m
 ]
 
 async def call_groq_api(messages: list[dict[str, str]], system_prompt: str = '', response_format_json: bool = True) -> dict[str, Any] | str:

@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from .models import (
@@ -30,7 +30,7 @@ _finding_seq = 0
 _version_seq = 0
 
 def get_current_iso_time() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def next_evidence_id() -> str:
     global _evidence_seq

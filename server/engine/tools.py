@@ -127,12 +127,5 @@ def execute_tool(tool_name: str, args: dict[str, Any], project: ResearchProject)
         results = [{"targetId": e.targetArtifactId, "relationship": e.relationshipType.value} for e in edges]
         return {"downstream_edges": results}
         
-    elif tool_name == "SkepticArbiter":
-        # Mock skeptic
-        conc = args.get("conclusion", "")
-        if "unable" in conc.lower():
-            return {"skeptic_verdict": "AGREED", "feedback": "Valid, evidence is insufficient."}
-        return {"skeptic_verdict": "CHALLENGED", "feedback": "Are you sure this is deterministically proven? Keyword overlap is not proof."}
-        
     else:
         return {"error": f"Unknown tool {tool_name}"}

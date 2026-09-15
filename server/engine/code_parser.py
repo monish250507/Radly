@@ -117,7 +117,7 @@ def extract_code_symbols(files: list[dict[str, str]]) -> list[dict[str, Any]]:
         if not f or not f.get('content'):
             continue
 
-        file_path = f.get('path', '')
+        file_path = f.get('path') or f.get('name') or ''
         ext = os.path.splitext(file_path)[1].lower()
 
         # Enforce size limits per file (5MB limit)
@@ -202,63 +202,6 @@ def is_extraction_failed(symbol: dict[str, Any]) -> bool:
     Callers must filter these out before building evidence or findings."""
     return symbol.get('type') == 'EXTRACTION_FAILED'
 
-def parse_python_regex_fallback(code: str, file_path: str, extraction_status: str = "PARTIAL") -> list[dict[str, Any]]:
-    symbols = []
-    lines = code.split('\n')
-    current_class = None
-
-    class_re = re.compile(r'^class\s+([a-zA-Z_][a-zA-Z0-9_]*)')
-    func_re = re.compile(r'^def\s+([a-zA-Z_][a-zA-Z0-9_]*)')
-    assign_re = re.compile(r'^(?:self\.)?([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^#\n]+)')
-
-    for idx, line_text in enumerate(lines):
-        line_num = idx + 1
-        trimmed = line_text.strip()
-
-        if not trimmed or trimmed.startswith('#'):
-            continue
-
-        class_match = class_re.match(trimmed)
-        if class_match:
-            current_class = class_match.group(1)
-            symbols.append({
-                'symbol': class_match.group(1),
-                'type': 'Class',
-                'value': f"class {class_match.group(1)}",
-                'line': line_num,
-                'file': file_path,
-                'extraction_status': extraction_status
-            })
-            continue
-
-        func_match = func_re.match(trimmed)
-        if func_match:
-            symbols.append({
-                'symbol': func_match.group(1),
-                'type': 'Function',
-                'value': f"def {func_match.group(1)}",
-                'line': line_num,
-                'file': file_path,
-                'extraction_status': extraction_status
-            })
-            continue
-
-        assign_match = assign_re.match(trimmed)
-        if assign_match:
-            var_name = assign_match.group(1)
-            val_str = assign_match.group(2).strip()
-
-            if var_name not in ['self', 'cls', 'super', 'print', 'return', 'if', 'else', 'elif', 'for', 'while']:
-                symbols.append({
-                    'symbol': var_name,
-                    'type': f"ClassVariable ({current_class})" if current_class else 'Variable',
-                    'value': val_str[:60] + '...' if len(val_str) > 60 else val_str,
-                    'line': line_num,
-                    'file': file_path,
-                    'extraction_status': extraction_status
-                })
-
-    return symbols
 
 def parse_js_or_config(code: str, file_path: str) -> list[dict[str, Any]]:
     symbols = []

@@ -71,7 +71,7 @@ def _check_rate_limit(client_ip: str, kind: str = 'read') -> bool:
 app = FastAPI(
     title=config.Service.FRIENDLY_NAME,
     description='PaperBlast — Research Code & Paper Impact Analyzer API',
-    version='1.1.0',
+    version=config.Service.VERSION,
     docs_url='/api/docs',
     redoc_url='/api/redoc',
     openapi_url='/api/openapi.json',
@@ -227,8 +227,8 @@ async def ingest_github(req: IngestGithubRequest):
     # Strategy 1: Git clone
     target_dir = mkdtemp(prefix=f"repo_{owner}_{repo}_")
     try:
-        proc = await asyncio.create_subprocess_shell(
-            f'git clone --depth 1 --filter=blob:none {clean_url}.git "{target_dir}"',
+        proc = await asyncio.create_subprocess_exec(
+            'git', 'clone', '--depth', '1', '--filter=blob:none', f"{clean_url}.git", target_dir,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
@@ -264,15 +264,19 @@ async def ingest_github(req: IngestGithubRequest):
                     zip_url = f"https://codeload.github.com/{owner}/{repo}/zip/refs/heads/{branch}"
                     resp = await client.get(zip_url, timeout=6.0, headers={'User-Agent': 'Mozilla/5.0'})
                     if resp.status_code == 200:
-                        zip_path = os.path.join(mkdtemp(), 'repo.zip')
-                        with open(zip_path, 'wb') as zip_f:
-                            zip_f.write(resp.content)
-                        with zipfile.ZipFile(zip_path, 'r') as zf:
-                            for fn in zf.namelist():
-                                ext = os.path.splitext(fn)[1].lower()
-                                if ext in valid_exts and not fn.endswith('/') and '/test' not in fn and '/venv' not in fn:
-                                    content = zf.read(fn).decode('utf-8', errors='ignore')
-                                    code_files.append({'path': fn, 'content': content})
+                        zip_dir = mkdtemp(prefix="zip_download_")
+                        try:
+                            zip_path = os.path.join(zip_dir, 'repo.zip')
+                            with open(zip_path, 'wb') as zip_f:
+                                zip_f.write(resp.content)
+                            with zipfile.ZipFile(zip_path, 'r') as zf:
+                                for fn in zf.namelist():
+                                    ext = os.path.splitext(fn)[1].lower()
+                                    if ext in valid_exts and not fn.endswith('/') and '/test' not in fn and '/venv' not in fn:
+                                        content = zf.read(fn).decode('utf-8', errors='ignore')
+                                        code_files.append({'path': fn, 'content': content})
+                        finally:
+                            shutil.rmtree(zip_dir, ignore_errors=True)
                         break
                 except Exception:
                     pass
@@ -290,6 +294,7 @@ async def ingest_github(req: IngestGithubRequest):
     }
 
 @app.post("/api/parse-paper")
+@app.post("/api/parse-document")
 async def parse_paper(req: ParsePaperRequest):
     if not req.documentBuffer:
         raise HTTPException(status_code=400, detail="Document content required.")
@@ -324,7 +329,7 @@ async def health_check():
     return {
         "status": "OK",
         "service": config.Service.NAME,
-        "version": "1.0.0",
+        "version": config.Service.VERSION,
         "runtime": config.RUNTIME_MODE,
         "env": config.ENV,
         "groq_configured": config.Groq.CONFIGURED,
@@ -334,16 +339,25 @@ async def health_check():
 @app.get("/api/domain/schema")
 async def domain_schema():
     from .domain.models import ArtifactType, EvidenceType, VerificationStatus
+    from .engine.persistence.db_adapter import get_db_provider, SqliteAdapter, PostgresAdapter, InMemoryAdapter
+    provider = get_db_provider()
+    mode = "sqlite" if isinstance(provider, SqliteAdapter) else ("postgres" if isinstance(provider, PostgresAdapter) else "in-memory")
+    is_durable = not isinstance(provider, InMemoryAdapter)
     return {
         "schemaVersion": SCHEMA_VERSION,
         "artifactTypes": [e.value for e in ArtifactType],
         "evidenceTypes": [e.value for e in EvidenceType],
         "verificationStatuses": [e.value for e in VerificationStatus],
-        "persistenceMode": "development-in-memory",
-        "persistenceDurable": False,
-        "note": "In-memory persistence only. Attach Vercel KV or external DB for production durability."
+        "persistenceMode": mode,
+        "persistenceDurable": is_durable,
+        "note": f"Active persistence: {mode} (durable: {is_durable})."
     }
 
 dist_path = Path(__file__).parent.parent / "dist"
 if dist_path.exists() and dist_path.is_dir():
     app.mount("/", StaticFiles(directory=str(dist_path), html=True), name="dist")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server.main:app", host="0.0.0.0", port=config.PORT)
+

@@ -1,14 +1,8 @@
 import React from 'react';
 
 /**
- * ChangeConsole — renamed from WhatIfConsole.
- *
- * P1 FIX:
- * - Button renamed from "Calculate Blast Radius" → "Analyse Impact"
- * - Step 3 label updated to "Code Change or Diff Description"
- * - Changed placeholder to be more concrete and actionable
- * - Loading text updated ("Analysing Impact…" not "Calculating Blast Radius…")
- * - File counts display more detail (symbol types)
+ * ChangeConsole — interactive console for repository ingestion, paper parsing,
+ * and parameterized code change/diff impact queries.
  */
 export default function ChangeConsole({
   query,

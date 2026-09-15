@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi import HTTPException
@@ -32,7 +32,7 @@ async def test_guest_migration(mock_db):
         id="conv_1",
         project_id="temp_proj",
         owner_id=guest_session_id,
-        created_at=datetime.utcnow().isoformat()
+        created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
     await mock_db.create_conversation(conv)
     
@@ -96,7 +96,7 @@ async def test_invitation_expired(mock_db):
     inv = await send_invitation(project_id, owner.id, "collab@test.com", Role.REVIEWER)
     
     # Manually expire
-    inv.expires_at = (datetime.utcnow() - timedelta(days=1)).isoformat() + "Z"
+    inv.expires_at = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat().replace("+00:00", "Z")
     await mock_db.update_invitation(inv)
     
     collab = await mock_db.create_user("collab@test.com")

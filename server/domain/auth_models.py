@@ -56,6 +56,32 @@ class Conversation(BaseModel):
     title: str = "New Conversation"
     created_at: str
 
+class DiffHunk(BaseModel):
+    old_start: int = 0
+    old_lines: int = 0
+    new_start: int = 0
+    new_lines: int = 0
+    header: str = ""
+    lines: list[str] = Field(default_factory=list)
+
+class FileDiff(BaseModel):
+    path: str
+    status: str = "modified" # "added", "removed", "modified"
+    additions: int = 0
+    deletions: int = 0
+    hunks: list[str | DiffHunk] = Field(default_factory=list)
+
+class DiffSummary(BaseModel):
+    description: str = ""
+    base_commit: str | None = None
+    proposed_commit: str | None = None
+    total_files_changed: int = 0
+    total_additions: int = 0
+    total_deletions: int = 0
+    added: list[str] = Field(default_factory=list)
+    removed: list[str] = Field(default_factory=list)
+    modified: list[FileDiff | dict[str, Any]] = Field(default_factory=list)
+
 class ResearchPR(BaseModel):
     id: str
     project_id: str
@@ -66,7 +92,7 @@ class ResearchPR(BaseModel):
     analysis_status: str | None = None
     analysis_result: dict[str, Any] | None = None
     analysis_error: str | None = None
-    diff_summary: dict[str, Any] | None = None
+    diff_summary: DiffSummary | dict[str, Any] | None = None
     base_file_count: int | None = None
     proposed_file_count: int | None = None
     created_at: str

@@ -17,7 +17,7 @@ Production-grade features:
 """
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -87,27 +87,6 @@ class SubmitReviewRequest(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Internal PR storage helpers (production: replace with DB calls)
-# ---------------------------------------------------------------------------
-def _get_pr_store(db) -> dict:
-    """Return the PR store dict, creating it if needed."""
-    if not hasattr(db, '_pr_store'):
-        db._pr_store = {}
-    return db._pr_store
-
-
-def _get_comment_store(db) -> list:
-    if not hasattr(db, '_comment_store'):
-        db._comment_store = []
-    return db._comment_store
-
-
-def _get_review_store(db) -> list:
-    if not hasattr(db, '_review_store'):
-        db._review_store = []
-    return db._review_store
-
-
 # ---------------------------------------------------------------------------
 # Git diff fetcher — real branch/commit diff retrieval
 # ---------------------------------------------------------------------------
@@ -158,8 +137,8 @@ async def _fetch_branch_files(repo_url: str, branch: str, timeout: float = 30.0)
 
 async def _build_diff_query(base_files: list[dict], proposed_files: list[dict], description: str) -> dict:
     """
-    Build a deterministic diff summary from two file sets.
-    Compares file contents by path, returns a structured dictionary with hunks.
+    Build a deterministic diff summary from two file sets (P2-3).
+    Compares file contents by path, returns a structured dictionary with exact hunks and line ranges.
     """
     import difflib
     base_map = {f['path']: f['content'] for f in base_files}
@@ -168,19 +147,57 @@ async def _build_diff_query(base_files: list[dict], proposed_files: list[dict], 
     added = [p for p in prop_map if p not in base_map]
     removed = [p for p in base_map if p not in prop_map]
     modified = []
+    total_additions = 0
+    total_deletions = 0
+
+    hunk_header_re = re.compile(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$')
 
     for path in prop_map:
         if path in base_map and base_map[path] != prop_map[path]:
-            base_lines = base_map[path].splitlines()
-            prop_lines = prop_map[path].splitlines()
-            hunks = list(difflib.unified_diff(base_lines, prop_lines, fromfile=f"a/{path}", tofile=f"b/{path}", lineterm=""))
+            base_lines = base_map[path].splitlines(keepends=True)
+            prop_lines = prop_map[path].splitlines(keepends=True)
+            diff_lines = list(difflib.unified_diff(base_lines, prop_lines, fromfile=f"a/{path}", tofile=f"b/{path}"))
+            
+            file_additions = sum(1 for line in diff_lines if line.startswith('+') and not line.startswith('+++'))
+            file_deletions = sum(1 for line in diff_lines if line.startswith('-') and not line.startswith('---'))
+            total_additions += file_additions
+            total_deletions += file_deletions
+
+            parsed_hunks = []
+            current_hunk = None
+
+            for line in diff_lines:
+                match = hunk_header_re.match(line.strip())
+                if match:
+                    old_start = int(match.group(1))
+                    old_lines = int(match.group(2)) if match.group(2) else 1
+                    new_start = int(match.group(3))
+                    new_lines = int(match.group(4)) if match.group(4) else 1
+                    current_hunk = {
+                        "old_start": old_start,
+                        "old_lines": old_lines,
+                        "new_start": new_start,
+                        "new_lines": new_lines,
+                        "header": line.strip(),
+                        "lines": []
+                    }
+                    parsed_hunks.append(current_hunk)
+                elif current_hunk is not None:
+                    current_hunk["lines"].append(line.rstrip('\r\n'))
+
             modified.append({
                 "path": path,
-                "hunks": hunks[:50] # truncated for size
+                "status": "modified",
+                "additions": file_additions,
+                "deletions": file_deletions,
+                "hunks": parsed_hunks[:50]
             })
 
     return {
         "description": description,
+        "total_files_changed": len(added) + len(removed) + len(modified),
+        "total_additions": total_additions,
+        "total_deletions": total_deletions,
         "added": added,
         "removed": removed,
         "modified": modified
@@ -193,20 +210,21 @@ async def _build_diff_query(base_files: list[dict], proposed_files: list[dict], 
 async def _run_pr_analysis(pr_id: str, req: CreatePRRequest, db):
     """
     Background task: fetch both branches, build diff, run impact analysis,
-    attach result to the PR record.
+    attach result to the PR record in durable storage.
     """
+    import json
     from ..engine.code_parser import extract_code_symbols
     from ..engine.impact_engine import calculate_blast_radius
     from ..engine.paper_parser import extract_text_from_document, parse_paper_structure
 
-    pr_store = _get_pr_store(db)
-    pr = pr_store.get(pr_id)
+    pr = await db.get_pr(pr_id)
     if not pr:
         return
 
     try:
         logger.info(f"PR {pr_id}: fetching base branch {req.base_branch}...")
         pr.analysis_status = 'FETCHING_BASE'
+        await db.update_pr(pr)
 
         base_files = await _fetch_branch_files(req.base_repo_url, req.base_branch)
         if not base_files:
@@ -214,6 +232,7 @@ async def _run_pr_analysis(pr_id: str, req: CreatePRRequest, db):
 
         logger.info(f"PR {pr_id}: fetching proposed branch {req.proposed_branch}...")
         pr.analysis_status = 'FETCHING_PROPOSED'
+        await db.update_pr(pr)
 
         proposed_files = await _fetch_branch_files(req.proposed_repo_url, req.proposed_branch)
         if not proposed_files:
@@ -221,6 +240,7 @@ async def _run_pr_analysis(pr_id: str, req: CreatePRRequest, db):
 
         logger.info(f"PR {pr_id}: building diff ({len(base_files)} base, {len(proposed_files)} proposed files)...")
         pr.analysis_status = 'BUILDING_DIFF'
+        await db.update_pr(pr)
 
         diff_query = await _build_diff_query(base_files, proposed_files, req.change_description)
         code_symbols = extract_code_symbols(proposed_files)
@@ -230,16 +250,18 @@ async def _run_pr_analysis(pr_id: str, req: CreatePRRequest, db):
         if req.paper_content:
             logger.info(f"PR {pr_id}: parsing paper...")
             pr.analysis_status = 'PARSING_PAPER'
+            await db.update_pr(pr)
             raw_text = await extract_text_from_document(req.paper_content, req.paper_file_type or 'txt')
             paper_ast = parse_paper_structure(raw_text)
 
         logger.info(f"PR {pr_id}: running impact analysis ({len(code_symbols)} symbols, {len(paper_ast['sections'])} sections)...")
         pr.analysis_status = 'ANALYSING'
+        await db.update_pr(pr)
 
         result = await calculate_blast_radius(
             code_symbols,
             paper_ast,
-            importlib.import_module("json").dumps(diff_query) if diff_query else req.change_description,
+            json.dumps(diff_query) if diff_query else req.change_description,
             {'repoUrl': req.proposed_repo_url}
         )
 
@@ -248,14 +270,16 @@ async def _run_pr_analysis(pr_id: str, req: CreatePRRequest, db):
         pr.diff_summary = diff_query
         pr.base_file_count = len(base_files)
         pr.proposed_file_count = len(proposed_files)
-        pr.updated_at = datetime.utcnow().isoformat() + 'Z'
+        pr.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        await db.update_pr(pr)
         logger.info(f"PR {pr_id}: analysis complete — status={result.get('status')}")
 
     except Exception as e:
         logger.error(f"PR {pr_id}: analysis failed", {'error': str(e)})
         pr.analysis_status = 'FAILED'
         pr.analysis_error = str(e)
-        pr.updated_at = datetime.utcnow().isoformat() + 'Z'
+        pr.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        await db.update_pr(pr)
 
 
 # ---------------------------------------------------------------------------
@@ -272,16 +296,12 @@ async def create_research_pr(
       1. Fetches base and proposed branches from GitHub
       2. Builds a deterministic diff
       3. Runs full impact analysis
-      4. Attaches the result to the PR record
-
-    Returns the PR object immediately with analysis_status='QUEUED'.
-    Poll GET /api/prs/{pr_id} to check analysis_status.
+      4. Attaches the result to the PR record in durable storage
     """
     checker = require_role(Role.RESEARCHER)
     await checker(req.project_id, user)
 
     db = get_db_provider()
-    pr_store = _get_pr_store(db)
 
     pr = ResearchPR(
         id=f"pr_{uuid.uuid4().hex[:8]}",
@@ -290,18 +310,12 @@ async def create_research_pr(
         base_version_id=f"{req.base_repo_url}@{req.base_branch}",
         proposed_version_id=f"{req.proposed_repo_url}@{req.proposed_branch}",
         status=PRStatus.OPEN,
-        created_at=datetime.utcnow().isoformat() + "Z"
+        analysis_status='QUEUED',
+        created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        updated_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
-    # Extend PR with analysis tracking fields
-    pr.analysis_status = 'QUEUED'
-    pr.analysis_result = None
-    pr.analysis_error = None
-    pr.diff_summary = None
-    pr.base_file_count = None
-    pr.proposed_file_count = None
-    pr.updated_at = pr.created_at
 
-    pr_store[pr.id] = pr
+    await db.create_pr(pr)
     logger.info(f"PR {pr.id} created by {user.id}, queuing analysis")
 
     background_tasks.add_task(_run_pr_analysis, pr.id, req, db)
@@ -315,33 +329,42 @@ async def create_research_pr(
     }
 
 
+@pr_router.get("")
+async def list_research_prs(
+    project_id: str | None = None,
+    user: User = Depends(get_current_user)
+):
+    """List Research PRs, optionally filtered by project_id."""
+    db = get_db_provider()
+    prs = await db.list_prs(project_id)
+    return {"prs": prs, "count": len(prs)}
+
+
 @pr_router.get("/{pr_id}")
 async def get_research_pr(
     pr_id: str,
     user: User = Depends(get_current_user)
 ):
-    """Get a Research PR with its current analysis result."""
+    """Get a Research PR with its current analysis result from durable storage."""
     db = get_db_provider()
-    pr_store = _get_pr_store(db)
-    pr = pr_store.get(pr_id)
+    pr = await db.get_pr(pr_id)
     if not pr:
         raise HTTPException(status_code=404, detail=f"PR '{pr_id}' not found.")
 
-    # Any project member can view
     checker = require_role(Role.VIEWER)
     await checker(pr.project_id, user)
 
-    comment_store = _get_comment_store(db)
-    review_store = _get_review_store(db)
+    comments = await db.get_comments(pr_id)
+    reviews = await db.get_reviews(pr_id)
 
     return {
         "pr": pr,
-        "analysis_status": getattr(pr, 'analysis_status', 'UNKNOWN'),
-        "analysis_result": getattr(pr, 'analysis_result', None),
-        "analysis_error": getattr(pr, 'analysis_error', None),
-        "diff_summary": getattr(pr, 'diff_summary', None),
-        "comments": [c for c in comment_store if c.pr_id == pr_id],
-        "reviews": [r for r in review_store if r.pr_id == pr_id]
+        "analysis_status": pr.analysis_status or 'UNKNOWN',
+        "analysis_result": pr.analysis_result,
+        "analysis_error": pr.analysis_error,
+        "diff_summary": pr.diff_summary,
+        "comments": comments,
+        "reviews": reviews
     }
 
 
@@ -353,8 +376,7 @@ async def add_comment(
 ):
     """Add a comment to a Research PR. Requires VIEWER role or above."""
     db = get_db_provider()
-    pr_store = _get_pr_store(db)
-    pr = pr_store.get(pr_id)
+    pr = await db.get_pr(pr_id)
     if not pr:
         raise HTTPException(status_code=404, detail=f"PR '{pr_id}' not found.")
 
@@ -366,10 +388,10 @@ async def add_comment(
         pr_id=pr_id,
         author_id=user.id,
         content=req.content,
-        created_at=datetime.utcnow().isoformat() + "Z"
+        created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
 
-    _get_comment_store(db).append(comment)
+    await db.add_comment(comment)
     logger.info(f"Comment {comment.id} added to PR {pr_id} by {user.id}")
     return {"status": "created", "comment": comment}
 
@@ -385,8 +407,7 @@ async def submit_review(
     Updates the PR status to the reviewer's verdict.
     """
     db = get_db_provider()
-    pr_store = _get_pr_store(db)
-    pr = pr_store.get(pr_id)
+    pr = await db.get_pr(pr_id)
     if not pr:
         raise HTTPException(status_code=404, detail=f"PR '{pr_id}' not found.")
 
@@ -394,7 +415,7 @@ async def submit_review(
     await checker(pr.project_id, user)
 
     # Guard: require analysis to be complete before merging
-    analysis_status = getattr(pr, 'analysis_status', 'UNKNOWN')
+    analysis_status = pr.analysis_status or 'UNKNOWN'
     if req.verdict == PRStatus.MERGED and analysis_status not in ('COMPLETE', 'FAILED'):
         raise HTTPException(
             status_code=409,
@@ -408,12 +429,13 @@ async def submit_review(
         reviewer_id=user.id,
         verdict=req.verdict,
         content=req.content,
-        created_at=datetime.utcnow().isoformat() + "Z"
+        created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
 
-    _get_review_store(db).append(review)
+    await db.add_review(review)
     pr.status = req.verdict
-    pr.updated_at = datetime.utcnow().isoformat() + 'Z'
+    pr.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    await db.update_pr(pr)
 
     logger.info(f"Review {review.id} submitted for PR {pr_id} — verdict={req.verdict.value} by {user.id}")
     return {

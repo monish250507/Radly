@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
@@ -22,6 +22,7 @@ async def test_skeptic_wrong_parameter_mapping(mock_groq):
     ]
     
     project = make_dummy_project()
+    now_iso = datetime.now(timezone.utc).isoformat()
     run = ResearchAgentRun(
         run_id="run_skep_1",
         project_id="p1",
@@ -29,8 +30,8 @@ async def test_skeptic_wrong_parameter_mapping(mock_groq):
         current_state=AgentStatus.WAITING_FOR_SKEPTIC,
         current_conclusion="Tau affects Section 2",
         evidence_refs=["ev_123"],
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat()
+        created_at=now_iso,
+        updated_at=now_iso
     )
     
     # Tick 1: Request tool
@@ -50,14 +51,15 @@ async def test_skeptic_wrong_parameter_mapping(mock_groq):
 @pytest.mark.anyio
 async def test_skeptic_iteration_limit():
     project = make_dummy_project()
+    now_iso = datetime.now(timezone.utc).isoformat()
     run = ResearchAgentRun(
         run_id="run_skep_2",
         project_id="p1",
         goal="Check loop",
         current_state=AgentStatus.WAITING_FOR_SKEPTIC,
         skeptic_max_iterations=2,
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat()
+        created_at=now_iso,
+        updated_at=now_iso
     )
     
     run.skeptic_iterations = 2

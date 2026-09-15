@@ -220,7 +220,7 @@ export default function App() {
     <div className="min-h-screen bg-[var(--bg-color)] text-[var(--text-color)] flex flex-col items-center w-full font-sans transition-colors duration-300">
       <div className="app-wrapper space-y-6 flex flex-col items-center w-full">
 
-        {/* Header — P1 FIX: ImpactHeader replaces BlastRadiusHeader */}
+        {/* Header */}
         <ImpactHeader
           analysis={analysis}
           hasCode={codeSymbols.length > 0}
@@ -242,7 +242,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Input Console — P1 FIX: ChangeConsole replaces WhatIfConsole */}
+          {/* Input Console */}
           <ChangeConsole
             query={query}
             setQuery={setQuery}

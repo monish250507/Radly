@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..domain.models import (
     AgentStatus,
@@ -14,7 +14,7 @@ from .logger import paperblast_logger as logger
 from .tools import TOOLS_SCHEMA, execute_tool
 
 
-async def tick_skeptic(run: ResearchAgentRun, project: ResearchProject) -> ResearchAgentRun:
+async def tick_skeptic(run: ResearchAgentRun, project: ResearchProject, call_groq_fn=None) -> ResearchAgentRun:
     """
     Executes one adversarial verification step to challenge the primary agent's conclusion.
     """
@@ -24,7 +24,7 @@ async def tick_skeptic(run: ResearchAgentRun, project: ResearchProject) -> Resea
     if run.skeptic_iterations >= run.skeptic_max_iterations:
         run.status = VerificationStatus.UNABLE_TO_VERIFY
         run.current_state = AgentStatus.COMPLETED
-        run.updated_at = datetime.utcnow().isoformat() + "Z"
+        run.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         return run
 
     run.skeptic_iterations += 1
@@ -67,7 +67,8 @@ If you have completed your verification, output a verdict:
 
     try:
         messages = [{"role": "user", "content": history_text}]
-        response = await call_groq_api(messages, system_prompt=sys_prompt, response_format_json=True)
+        llm_fn = call_groq_fn or call_groq_api
+        response = await llm_fn(messages, system_prompt=sys_prompt, response_format_json=True)
         
         if not isinstance(response, dict):
             raise ValueError("AI returned non-JSON string")
@@ -107,5 +108,5 @@ If you have completed your verification, output a verdict:
         logger.error("Skeptic tick failed", {"error": str(e)})
         run.skeptic_observations.append(ToolObservation(tool_id="sys", result={"error": str(e)}, is_error=True))
 
-    run.updated_at = datetime.utcnow().isoformat() + "Z"
+    run.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     return run

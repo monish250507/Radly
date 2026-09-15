@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  paperblast:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paperblast
+    ports:
+      - "5000:5000"
+    environment:
+      - RBR_DB_URL=sqlite+pysqlite:///./rbr_local.db
+      - RBR_LLM_PROVIDER=groq
+      - RBR_LLM_MODEL=openai/gpt-oss-120b
+      - RBR_LLM_API_KEY=${RBR_LLM_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-dev_secret_do_not_use_in_prod_key_32b}
+      - LOG_LEVEL=INFO
+    volumes:
+      - paperblast_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  paperblast_data:

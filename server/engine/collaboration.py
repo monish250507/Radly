@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
 from fastapi import HTTPException
@@ -32,7 +32,6 @@ async def migrate_guest_to_auth(email: str, guest_session_id: str) -> User:
     await db.add_project_member(user.id, project_id, Role.OWNER)
     
     # 4. Migrate conversations matching guest_session_id
-    # Since we are not doing a full SQL query, we manually iterate the mock db
     if hasattr(db, 'conversations'):
         for conv in db.conversations.values():
             if conv.owner_id == guest_session_id:
@@ -53,8 +52,9 @@ async def send_invitation(project_id: str, inviter_id: str, email: str, role: Ro
                 inv.status = InvitationStatus.REVOKED
                 await db.update_invitation(inv)
 
+    now_utc = datetime.now(timezone.utc)
     token = f"inv_{uuid.uuid4().hex}"
-    expires_at = (datetime.utcnow() + timedelta(days=7)).isoformat() + "Z"
+    expires_at = (now_utc + timedelta(days=7)).isoformat().replace("+00:00", "Z")
     
     inv = Invitation(
         token=token,
@@ -63,7 +63,7 @@ async def send_invitation(project_id: str, inviter_id: str, email: str, role: Ro
         email=email,
         status=InvitationStatus.PENDING,
         expires_at=expires_at,
-        created_at=datetime.utcnow().isoformat() + "Z"
+        created_at=now_utc.isoformat().replace("+00:00", "Z")
     )
     
     await db.create_invitation(inv)
@@ -83,7 +83,8 @@ async def accept_invitation(token: str, current_user: User):
     if inv.email != current_user.email:
         raise HTTPException(status_code=403, detail="Invitation was sent to a different email address")
         
-    if datetime.utcnow().isoformat() > inv.expires_at:
+    now_str = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    if now_str > inv.expires_at:
         inv.status = InvitationStatus.EXPIRED
         await db.update_invitation(inv)
         raise HTTPException(status_code=400, detail="Invitation has expired")
@@ -111,6 +112,6 @@ async def log_audit_event(project_id: str, actor_id: str, action: str, details: 
         actor_id=actor_id,
         action=action,
         details=details or {},
-        created_at=datetime.utcnow().isoformat() + "Z"
+        created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )
     await db.log_audit(event)
