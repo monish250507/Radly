@@ -22,7 +22,7 @@ from ..domain.models import (
 )
 from .config import config
 from .groq_client import call_groq_api
-from .logger import paperblast_logger as logger
+from .logger import radly_logger as logger
 from .status_model import derive_risk_level, resolve_overall_status
 
 VALID_RISKS = {'CRITICAL', 'HIGH', 'MAJOR', 'MINOR'}

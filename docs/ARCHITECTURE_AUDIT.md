@@ -1,4 +1,4 @@
-# PaperBlast — Architecture Audit (Pre-Migration Baseline)
+# Radly — Architecture Audit (Pre-Migration Baseline)
 
 Date: 2026-08-22
 Scope: full inspection of the live codebase (`api/`, `server/`, `client/`, configs) plus recorded baseline runs on Node v22.17.0, npm 11.13.0, Vercel CLI 59.1.3.

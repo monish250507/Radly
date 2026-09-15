@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for PaperBlast
+# Multi-stage Dockerfile for Radly
 # Compatible with Hugging Face Spaces, Render, Koyeb, Railway, and local Docker
 
 # Stage 1: Build React Frontend

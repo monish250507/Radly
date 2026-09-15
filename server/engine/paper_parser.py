@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from typing import Any
 
-from .logger import paperblast_logger as logger
+from .logger import radly_logger as logger
 
 MAX_INPUT_BYTES = 10 * 1024 * 1024   # 10 MB
 MAX_TEXT_BYTES  = 5  * 1024 * 1024   # 5 MB post-extraction

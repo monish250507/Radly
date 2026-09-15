@@ -1,7 +1,7 @@
 """
 test_bulletproof.py — Comprehensive reliability, stress, and edge-case test suite.
 Validates concurrency, adversarial payloads, error resilience, security boundaries,
-and deterministic degradation across the entire PaperBlast architecture.
+and deterministic degradation across the entire Radly architecture.
 """
 import asyncio
 import os

@@ -1,7 +1,7 @@
 {
-  "name": "paperblast-impact-analyzer",
+  "name": "radly-impact-analyzer",
   "version": "1.0.0",
-  "description": "Research Code & Paper Impact Analyzer - Bipartite AST & Blast Radius Engine",
+  "description": "Radly — Research Code & Paper Impact Analyzer - Bipartite AST & Blast Radius Engine",
   "type": "module",
   "scripts": {
     "server": "uvicorn server.main:app --host 0.0.0.0 --port 5000",

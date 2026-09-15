@@ -3,7 +3,7 @@ import os
 import re
 from typing import Any
 
-from .logger import paperblast_logger as logger
+from .logger import radly_logger as logger
 
 
 class PythonCodeVisitor(ast.NodeVisitor):

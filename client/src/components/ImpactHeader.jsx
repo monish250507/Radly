@@ -142,7 +142,7 @@ export default function ImpactHeader({
         <div className="flex flex-col items-center justify-center gap-1">
           <div className="flex items-center justify-center gap-2.5">
             <h1 className="text-xl font-extrabold tracking-tight text-[var(--box-text)] uppercase font-mono text-center">
-              PaperBlast — Research Impact Analyzer
+              Radly — Research Impact Analyzer
             </h1>
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
           </div>

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to PaperBlast will be documented in this file.
+All notable changes to Radly will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -26,4 +26,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Vercel routing where `/api/*` was directed to a missing Node.js `index.js` file; backend is now properly mapped to FastAPI `main.py`.
 
 ## [1.0.0] - 2026-08-21
-- Initial public release of PaperBlast prototype.
+- Initial public release of Radly prototype.

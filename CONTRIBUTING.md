@@ -1,6 +1,6 @@
-# Contributing to PaperBlast
+# Contributing to Radly
 
-Welcome to **PaperBlast**! We are thrilled that you are interested in contributing. PaperBlast is an open-source, dual-agent research blast-radius engine that detects how modifications to machine learning codebases propagate to claims, equations, and tables in scientific research papers.
+Welcome to **Radly**! We are thrilled that you are interested in contributing. Radly is an open-source, dual-agent research blast-radius engine that detects how modifications to machine learning codebases propagate to claims, equations, and tables in scientific research papers.
 
 Whether you're fixing a bug, adding support for a new programming language AST, building a new paper format adapter, or improving documentation, your contributions are warmly welcomed.
 
@@ -26,7 +26,7 @@ Whether you're fixing a bug, adding support for a new programming language AST, 
 We are committed to providing a friendly, safe, and welcoming environment for everyone, regardless of experience level, gender, sexual orientation, disability, ethnicity, or religion.
 
 - **Be respectful and constructive** in code reviews, discussions, and issue comments.
-- **Focus on grounded verification**: PaperBlast is designed to eliminate hallucinations in scientific code review. Keep this precision mindset in your contributions.
+- **Focus on grounded verification**: Radly is designed to eliminate hallucinations in scientific code review. Keep this precision mindset in your contributions.
 
 ---
 
@@ -166,7 +166,7 @@ Located in [`server/engine/persistence/db_adapter.py`](file:///c:/Users/Nevan/De
 
 ## Testing & Quality Assurance
 
-PaperBlast maintains a rigorous automated test suite. **All pull requests must pass 100% of the test suite before being merged.**
+Radly maintains a rigorous automated test suite. **All pull requests must pass 100% of the test suite before being merged.**
 
 ### Running Tests
 
@@ -223,4 +223,4 @@ python scripts/test_real_world.py
    - [ ] Updated documentation or docstrings where applicable.
    - [ ] No secrets or personal API keys committed.
 
-Thank you for helping make PaperBlast the definitive open-source standard for research code impact analysis!
+Thank you for helping make Radly the definitive open-source standard for research code impact analysis!

@@ -13,8 +13,8 @@ class Config:
     LOG_LEVEL = os.environ.get("LOG_LEVEL", os.environ.get("RBR_LOG_LEVEL", "info")).lower()
     
     class Service:
-        NAME = "paperblast-impact-analyzer"
-        FRIENDLY_NAME = "PaperBlast Impact Engine API"
+        NAME = "radly-impact-analyzer"
+        FRIENDLY_NAME = "Radly Impact Engine API"
         VERSION = "1.1.0"
     
     class Groq:

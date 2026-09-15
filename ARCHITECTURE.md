@@ -1,6 +1,6 @@
-# PaperBlast System Architecture
+# Radly System Architecture
 
-PaperBlast bridges machine learning codebases and scientific paper manuscripts by transforming code changes into verifiable impact assessments against published equations, tables, and claims.
+Radly bridges machine learning codebases and scientific paper manuscripts by transforming code changes into verifiable impact assessments against published equations, tables, and claims.
 
 ```
 ┌────────────────────────────────────────────────────────┐

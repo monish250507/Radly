@@ -6,7 +6,7 @@ from typing import Any
 from groq import AsyncGroq
 
 from .config import config
-from .logger import paperblast_logger as logger
+from .logger import radly_logger as logger
 
 
 class UpstreamError(Exception):

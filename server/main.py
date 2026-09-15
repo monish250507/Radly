@@ -19,7 +19,7 @@ from .engine.code_parser import extract_code_symbols
 from .engine.config import config
 from .engine.impact_engine import calculate_blast_radius
 from .engine.jobs import create_job, get_job, update_job_status
-from .engine.logger import paperblast_logger as logger
+from .engine.logger import radly_logger as logger
 from .engine.paper_parser import extract_text_from_document, parse_paper_structure
 
 
@@ -70,7 +70,7 @@ def _check_rate_limit(client_ip: str, kind: str = 'read') -> bool:
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title=config.Service.FRIENDLY_NAME,
-    description='PaperBlast — Research Code & Paper Impact Analyzer API',
+    description='Radly — Research Code & Paper Impact Analyzer API',
     version=config.Service.VERSION,
     docs_url='/api/docs',
     redoc_url='/api/redoc',

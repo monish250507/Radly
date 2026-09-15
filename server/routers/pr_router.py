@@ -25,7 +25,7 @@ from pydantic import BaseModel, field_validator
 
 from ..domain.auth_models import Comment, PRStatus, ResearchPR, Review, Role, User
 from ..engine.auth import get_current_user, require_role
-from ..engine.logger import paperblast_logger as logger
+from ..engine.logger import radly_logger as logger
 from ..engine.persistence.db_adapter import get_db_provider
 
 pr_router = APIRouter(prefix="/api/prs", tags=["Research PR"])
@@ -113,7 +113,7 @@ async def _fetch_branch_files(repo_url: str, branch: str, timeout: float = 30.0)
     zip_url = f"https://codeload.github.com/{owner}/{repo}/zip/refs/heads/{branch}"
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            resp = await client.get(zip_url, headers={'User-Agent': 'PaperBlast/1.0'})
+            resp = await client.get(zip_url, headers={'User-Agent': 'Radly/1.0'})
             if resp.status_code != 200:
                 raise ValueError(f"Branch '{branch}' not found in {owner}/{repo} (HTTP {resp.status_code})")
 

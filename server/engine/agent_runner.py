@@ -11,7 +11,7 @@ from ..domain.models import (
     VerificationStatus,
 )
 from .groq_client import call_groq_api
-from .logger import paperblast_logger as logger
+from .logger import radly_logger as logger
 from .tools import TOOLS_SCHEMA, execute_tool
 
 

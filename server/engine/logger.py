@@ -18,7 +18,7 @@ class JsonFormatter(logging.Formatter):
             log_entry.update(record.meta)
         return json.dumps(log_entry)
 
-logger = logging.getLogger("paperblast")
+logger = logging.getLogger("radly")
 logger.setLevel(logging.INFO if config.IS_PRODUCTION else logging.DEBUG)
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
@@ -45,4 +45,4 @@ class LoggerProxy:
     @classmethod
     def error(cls, msg, meta=None): cls._log("error", msg, meta)
 
-paperblast_logger = LoggerProxy()
+radly_logger = LoggerProxy()

@@ -1,5 +1,5 @@
 ---
-title: PaperBlast — Research Blast Radius
+title: Radly — Research Blast Radius
 emoji: 🔬
 colorFrom: indigo
 colorTo: purple
@@ -11,7 +11,7 @@ license: mit
 
 <div align="center">
 
-# 🔬 PaperBlast
+# 🔬 Radly
 
 **Automated Code-to-Paper Impact Analyzer & Adversarial Skeptic Verifier**
 
@@ -30,11 +30,11 @@ license: mit
 
 ---
 
-## 💡 Why PaperBlast?
+## 💡 Why Radly?
 
 In scientific computing and AI research, a single line change in a training script—such as altering `learning_rate = 1e-4` to `1e-3`, modifying an optimizer, or tweaking a loss function—can completely invalidate the reported results, tables, and theoretical claims in a published paper.
 
-Traditional LLMs hallucinate dependencies when asked to summarize diffs. **PaperBlast replaces guesswork with formal proof**:
+Traditional LLMs hallucinate dependencies when asked to summarize diffs. **Radly replaces guesswork with formal proof**:
 1. **Deterministic Code AST Analysis**: Builds data-flow and function call hierarchies without executing untrusted code.
 2. **Scientific Document AST**: Extracts manuscript sections, equations, tables, and numerical claims from PDFs, DOCX, and LaTeX.
 3. **Bipartite Provenance Graph**: Maps parameters in code directly to numerical claims in paper figures and tables.
@@ -171,7 +171,7 @@ Open your browser at **`http://localhost:3000`**.
 
 ## 🤗 Deploy to Hugging Face Spaces (100% Free — 16 GB RAM)
 
-PaperBlast is fully tailored for [Hugging Face Spaces](https://huggingface.co/spaces) using Docker:
+Radly is fully tailored for [Hugging Face Spaces](https://huggingface.co/spaces) using Docker:
 
 1. **Create a Space**: Go to [huggingface.co/new-space](https://huggingface.co/new-space), enter a name, choose **Docker** SDK, and select **Blank**.
 2. **Push Code**: Push this repository to your Space Git remote or connect your GitHub repository.
@@ -187,7 +187,7 @@ PaperBlast is fully tailored for [Hugging Face Spaces](https://huggingface.co/sp
 
 ## 🐳 Docker Deployment
 
-To launch PaperBlast in a containerized environment locally with a single command:
+To launch Radly in a containerized environment locally with a single command:
 
 ```bash
 docker compose up --build
@@ -198,7 +198,7 @@ This starts the production container on **`http://localhost:5000`** (or port `78
 
 ## 💻 CLI Usage
 
-PaperBlast includes a standalone, stateless CLI for terminal and CI/CD automation:
+Radly includes a standalone, stateless CLI for terminal and CI/CD automation:
 
 ```bash
 # Ingest a public repository
@@ -231,7 +231,7 @@ python cli.py pr create --repo https://github.com/karpathy/nanoGPT --branch feat
 
 ## 🧪 Running Tests
 
-PaperBlast features an extensive test suite covering unit logic, AST parsing, integration contracts, and stress/concurrency resilience:
+Radly features an extensive test suite covering unit logic, AST parsing, integration contracts, and stress/concurrency resilience:
 
 ```bash
 # Run complete test suite (127+ tests)
@@ -255,4 +255,4 @@ Please see our [CONTRIBUTING.md](CONTRIBUTING.md) guide for instructions on sett
 
 ## 📜 License
 
-PaperBlast is licensed under the [MIT License](LICENSE).
+Radly is licensed under the [MIT License](LICENSE).

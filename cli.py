@@ -4,7 +4,7 @@ import sys
 import time
 import httpx
 
-API_URL = os.getenv("PAPERBLAST_API_URL", "http://localhost:5000/api")
+API_URL = os.getenv("RADLY_API_URL", "http://localhost:5000/api")
 
 
 def ingest_cmd(args):
@@ -32,7 +32,7 @@ def analyze_cmd(args):
     # Validate required arguments
     if not args.repo:
         print("ERROR: --repo is required. Provide a GitHub URL or local repo path.")
-        print("  Example: paperblast analyze --repo https://github.com/org/repo --paper paper.txt --query 'changed learning_rate from 0.01 to 0.001'")
+        print("  Example: radly analyze --repo https://github.com/org/repo --paper paper.txt --query 'changed learning_rate from 0.01 to 0.001'")
         sys.exit(1)
     if not args.paper:
         print("ERROR: --paper is required. Provide the path to the research paper file.")
@@ -120,12 +120,12 @@ def analyze_cmd(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="PaperBlast CLI — trace code changes to research paper impact",
+        description="Radly CLI — trace code changes to research paper impact",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  paperblast ingest --repo https://github.com/org/repo
-  paperblast analyze --repo https://github.com/org/repo --paper paper.txt --query "changed learning_rate from 0.01 to 0.001"
+  radly ingest --repo https://github.com/org/repo
+  radly analyze --repo https://github.com/org/repo --paper paper.txt --query "changed learning_rate from 0.01 to 0.001"
         """
     )
     subparsers = parser.add_subparsers(dest="command")

@@ -1,6 +1,6 @@
 # Vercel & Production Compatibility Audit
 
-PaperBlast is fully compatible with Vercel's serverless Edge/Node architecture as well as standalone containerized environments.
+Radly is fully compatible with Vercel's serverless Edge/Node architecture as well as standalone containerized environments.
 
 ---
 
@@ -17,4 +17,4 @@ PaperBlast is fully compatible with Vercel's serverless Edge/Node architecture a
 
 ### 3. Subprocess & System Security
 - **Safe Process Spawning**: All Git clone and diff operations use `asyncio.create_subprocess_exec` with explicit argument lists, fully compliant with hardened serverless runtimes.
-- **Stateless CLI**: The CLI (`paperblast` command) interacts entirely through REST APIs (`httpx`), requiring no local shell-level access on the server.
+- **Stateless CLI**: The CLI (`radly` command) interacts entirely through REST APIs (`httpx`), requiring no local shell-level access on the server.

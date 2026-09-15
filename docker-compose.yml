@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  paperblast:
+  radly:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: paperblast
+    container_name: radly
     ports:
       - "5000:5000"
     environment:
@@ -17,8 +17,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev_secret_do_not_use_in_prod_key_32b}
       - LOG_LEVEL=INFO
     volumes:
-      - paperblast_data:/app/data
+      - radly_data:/app/data
     restart: unless-stopped
 
 volumes:
-  paperblast_data:
+  radly_data:

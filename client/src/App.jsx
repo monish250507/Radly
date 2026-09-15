@@ -202,7 +202,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `paperblast-impact-report-${Date.now()}.json`;
+    a.download = `radly-impact-report-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -506,7 +506,7 @@ export default function App() {
         </main>
 
         <footer className="w-full py-6 text-center text-xs font-medium text-gray-500 mt-6 border-t border-[var(--border-color)]">
-          PaperBlast — Research Code &amp; Paper Impact Analyzer · Open Source
+          Radly — Research Code &amp; Paper Impact Analyzer · Open Source
         </footer>
       </div>
     </div>

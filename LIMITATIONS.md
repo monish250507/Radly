@@ -1,7 +1,7 @@
 # Known Limitations
 
 ## 1. Execution Sandboxing
-PaperBlast is currently a purely static analysis tool backed by a deterministic graph and LLM agent orchestration. Because we operate in a serverless environment (Vercel) without heavy VM capabilities, **safe execution of arbitrary research code is not available**.
+Radly is currently a purely static analysis tool backed by a deterministic graph and LLM agent orchestration. Because we operate in an isolated environment without heavy VM capabilities, **safe execution of arbitrary research code is not available**.
 - The system returns `EXECUTION_UNAVAILABLE` rather than attempting to `eval()` or unsafely run shell scripts.
 - All numerical impact analyses are strictly marked `PREDICTED`, never `OBSERVED_BY_EXECUTION`.
 

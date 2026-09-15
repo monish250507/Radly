@@ -1,5 +1,5 @@
 """
-conftest.py — Shared pytest fixtures for the PaperBlast test suite.
+conftest.py — Shared pytest fixtures for the Radly test suite.
 
 The "mini research project" fixture is the benchmark fixture described in the audit PDF:
   config.py (learning_rate=1e-4) → train.py (training function) →

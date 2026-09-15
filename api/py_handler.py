@@ -1,5 +1,5 @@
 """
-Vercel Python runtime entry point for PaperBlast FastAPI backend.
+Vercel Python runtime entry point for Radly FastAPI backend.
 
 P0 FIX: Replaces the broken api/index.js → server/index.js Node adapter.
 This file is the actual Vercel serverless function handler that wraps the

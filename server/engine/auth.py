@@ -9,10 +9,10 @@ from .persistence.db_adapter import get_db_provider
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_do_not_use_in_prod_key_32b")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_ISSUER = os.getenv("JWT_ISSUER", "paperblast_auth")
-JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "paperblast")
+JWT_ISSUER = os.getenv("JWT_ISSUER", "radly_auth")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "radly")
 
-logger = logging.getLogger("paperblast.auth")
+logger = logging.getLogger("radly.auth")
 
 
 def create_access_token(payload: dict[str, Any], secret: str = JWT_SECRET) -> str:
