@@ -53,7 +53,12 @@ def test_parse_real_pdf():
     if not os.path.exists(pdf_path):
         import urllib.request
         print("\n--> Auto-downloading LoRA sample paper (arXiv:2106.09685)...")
-        urllib.request.urlretrieve("https://arxiv.org/pdf/2106.09685.pdf", pdf_path)
+        req = urllib.request.Request(
+            "https://arxiv.org/pdf/2106.09685.pdf", 
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        )
+        with urllib.request.urlopen(req) as response, open(pdf_path, 'wb') as out_file:
+            out_file.write(response.read())
     print(f"\n--> Testing Real PDF Document Parsing: {pdf_path} ...")
     
     import base64
