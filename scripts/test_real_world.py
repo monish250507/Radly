@@ -50,7 +50,10 @@ def test_ingest_github():
 
 def test_parse_real_pdf():
     pdf_path = "real_paper_lora.pdf"
-    assert os.path.exists(pdf_path), f"PDF file not found: {pdf_path}"
+    if not os.path.exists(pdf_path):
+        import urllib.request
+        print("\n--> Auto-downloading LoRA sample paper (arXiv:2106.09685)...")
+        urllib.request.urlretrieve("https://arxiv.org/pdf/2106.09685.pdf", pdf_path)
     print(f"\n--> Testing Real PDF Document Parsing: {pdf_path} ...")
     
     import base64
