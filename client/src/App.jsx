@@ -196,6 +196,10 @@ export default function App() {
   const affectedSectionsCount = analysis?.affected_sections?.length || 0;
   const equationsCount = (analysis?.affected_equations?.length || 0) + (analysis?.affected_tables?.length || 0);
 
+  const isCodeLoaded = codeSymbols.length > 0;
+  const isPaperLoaded = paperAST.sections.length > 0;
+  const canAccessAnalysis = isCodeLoaded && isPaperLoaded;
+
   return (
     <div className="min-h-screen flex bg-[#faf9f6] text-black font-sans antialiased">
       
@@ -230,15 +234,30 @@ export default function App() {
 
             <button
               id="nav-analysis-btn"
-              onClick={() => setActiveSidebarNav('analysis')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
-                activeSidebarNav === 'analysis'
+              onClick={() => {
+                if (canAccessAnalysis) {
+                  setActiveSidebarNav('analysis');
+                } else {
+                  setErrorMsg('Please provide both a code repository and research paper document in the Workspace before opening Analysis.');
+                }
+              }}
+              disabled={!canAccessAnalysis}
+              title={canAccessAnalysis ? 'Open Analysis' : 'Locked: Provide repo and paper in Workspace first'}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
+                !canAccessAnalysis
+                  ? 'bg-[#4b3dbd] text-white/50 border-black/60 cursor-not-allowed opacity-60'
+                  : activeSidebarNav === 'analysis'
                   ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
                   : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
               }`}
             >
-              <span className="text-base leading-none">⚡</span>
-              <span className="hidden md:inline">Analysis</span>
+              <div className="flex items-center gap-3">
+                <span className="text-base leading-none">⚡</span>
+                <span className="hidden md:inline">Analysis</span>
+              </div>
+              {!canAccessAnalysis && (
+                <span className="text-xs hidden md:inline" title="Locked">🔒</span>
+              )}
             </button>
           </nav>
         </div>
