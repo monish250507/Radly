@@ -45,7 +45,7 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [activeSidebarNav, setActiveSidebarNav] = useState('analysis');
+  const [activeSidebarNav, setActiveSidebarNav] = useState('workspace');
 
   // Ingest GitHub repository
   const handleIngestRepo = async () => {
@@ -216,19 +216,6 @@ export default function App() {
           {/* Functional Navigation Links */}
           <nav className="p-3 space-y-2 mt-3">
             <button
-              id="nav-analysis-btn"
-              onClick={() => setActiveSidebarNav('analysis')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
-                activeSidebarNav === 'analysis'
-                  ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
-                  : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
-              }`}
-            >
-              <span className="text-base leading-none">⚡</span>
-              <span className="hidden md:inline">Analysis</span>
-            </button>
-
-            <button
               id="nav-workspace-btn"
               onClick={() => setActiveSidebarNav('workspace')}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
@@ -241,15 +228,18 @@ export default function App() {
               <span className="hidden md:inline">Workspace</span>
             </button>
 
-            <a
-              href="/api/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider bg-[#6355d8] text-white hover:bg-[#5345c7] transition-all border-2 border-black shadow-[2px_2px_0px_#000]"
+            <button
+              id="nav-analysis-btn"
+              onClick={() => setActiveSidebarNav('analysis')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
+                activeSidebarNav === 'analysis'
+                  ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
+                  : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
+              }`}
             >
-              <span className="text-base leading-none">📖</span>
-              <span className="hidden md:inline">API Docs</span>
-            </a>
+              <span className="text-base leading-none">⚡</span>
+              <span className="hidden md:inline">Analysis</span>
+            </button>
           </nav>
         </div>
       </aside>
