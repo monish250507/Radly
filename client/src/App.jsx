@@ -201,84 +201,77 @@ export default function App() {
   const canAccessAnalysis = isCodeLoaded && isPaperLoaded;
 
   return (
-    <div className="min-h-screen flex bg-[#faf9f6] text-black font-sans antialiased">
+    <div className="min-h-screen flex flex-col bg-[#faf9f6] text-black font-sans antialiased">
       
-      {/* Neo-Brutalist Purple Rail Sidebar */}
-      <aside className="w-16 md:w-64 bg-[#6355d8] text-white flex flex-col justify-between shrink-0 border-r-2 border-black">
-        <div>
-          {/* Logo & Brand */}
-          <div className="h-16 flex items-center px-4 md:px-6 gap-3 border-b-2 border-black bg-[#5345c7]">
-            <div className="w-9 h-9 rounded-lg bg-[#fde047] text-black font-black text-lg flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
-              R
-            </div>
-            <div className="hidden md:block">
-              <span className="font-black text-lg tracking-tight font-mono">Radly</span>
-              <span className="text-[10px] block text-[#fde047] font-bold uppercase tracking-wider">Impact Studio</span>
-            </div>
-          </div>
-
-          {/* Functional Navigation Links */}
-          <nav className="p-3 space-y-2 mt-3">
-            <button
-              id="nav-workspace-btn"
-              onClick={() => setActiveSidebarNav('workspace')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
-                activeSidebarNav === 'workspace'
-                  ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
-                  : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
-              }`}
-            >
-              <span className="text-base leading-none">📂</span>
-              <span className="hidden md:inline">Workspace</span>
-            </button>
-
-            <button
-              id="nav-analysis-btn"
-              onClick={() => {
-                if (canAccessAnalysis) {
-                  setActiveSidebarNav('analysis');
-                } else {
-                  setErrorMsg('Please provide both a code repository and research paper document in the Workspace before opening Analysis.');
-                }
-              }}
-              disabled={!canAccessAnalysis}
-              title={canAccessAnalysis ? 'Open Analysis' : 'Locked: Provide repo and paper in Workspace first'}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
-                !canAccessAnalysis
-                  ? 'bg-[#4b3dbd] text-white/50 border-black/60 cursor-not-allowed opacity-60'
-                  : activeSidebarNav === 'analysis'
-                  ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
-                  : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-base leading-none">⚡</span>
-                <span className="hidden md:inline">Analysis</span>
-              </div>
-              {!canAccessAnalysis && (
-                <span className="text-xs hidden md:inline" title="Locked">🔒</span>
-              )}
-            </button>
-          </nav>
-        </div>
-      </aside>
-
-      {/* Main Content Pane */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      {/* Top Navigation Bar: Left (Workspace), Center (Radly Brand), Right (Analysis) */}
+      <header className="h-16 bg-[#6355d8] border-b-2 border-black px-4 sm:px-8 flex items-center justify-between shrink-0 shadow-[0px_3px_0px_#000] sticky top-0 z-30">
         
-        {/* Top Header Bar */}
-        <header className="h-16 bg-white border-b-2 border-black px-6 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3 font-mono text-xs font-bold">
-            <span className="text-gray-500 uppercase">STUDIO</span>
-            <span>/</span>
-            <span className="text-black uppercase">
-              {activeSidebarNav === 'analysis' ? 'BLAST RADIUS ANALYSIS & RESULTS' : 'CODE & PAPER INGESTION WORKSPACE'}
+        {/* Top Left: Workspace Nav Button */}
+        <div className="flex items-center">
+          <button
+            id="nav-workspace-btn"
+            onClick={() => setActiveSidebarNav('workspace')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
+              activeSidebarNav === 'workspace'
+                ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
+                : 'bg-[#5345c7] text-white hover:bg-[#4335b7] shadow-[2px_2px_0px_#000]'
+            }`}
+          >
+            <span className="text-sm">📂</span>
+            <span>Workspace</span>
+          </button>
+        </div>
+
+        {/* Top Center: App Brand & Name */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#fde047] text-black font-black text-base flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
+            R
+          </div>
+          <div className="text-center">
+            <span className="font-black text-base sm:text-lg tracking-tight font-mono text-white leading-none block">
+              Radly
+            </span>
+            <span className="text-[9px] block text-[#fde047] font-bold uppercase tracking-widest leading-none mt-0.5">
+              Impact Studio
             </span>
           </div>
-        </header>
+        </div>
 
+        {/* Top Right: Analysis Nav Button (Locked until Code + Paper loaded) */}
+        <div className="flex items-center">
+          <button
+            id="nav-analysis-btn"
+            onClick={() => {
+              if (canAccessAnalysis) {
+                setActiveSidebarNav('analysis');
+              } else {
+                setErrorMsg('Please provide both a code repository and research paper document in the Workspace before opening Analysis.');
+              }
+            }}
+            disabled={!canAccessAnalysis}
+            title={canAccessAnalysis ? 'Open Analysis' : 'Locked: Provide repo and paper in Workspace first'}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
+              !canAccessAnalysis
+                ? 'bg-[#4b3dbd] text-white/40 border-black/50 cursor-not-allowed opacity-60'
+                : activeSidebarNav === 'analysis'
+                ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
+                : 'bg-[#5345c7] text-white hover:bg-[#4335b7] shadow-[2px_2px_0px_#000]'
+            }`}
+          >
+            <span className="text-sm">⚡</span>
+            <span>Analysis</span>
+            {!canAccessAnalysis && (
+              <span className="text-xs" title="Locked">🔒</span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        
         {/* Workspace Canvas */}
-        <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1">
           
           {/* Header Title Section */}
           <ImpactHeader
@@ -406,40 +399,6 @@ export default function App() {
                     <span className="text-xs font-bold text-gray-600">
                       {analysis?.execution_time_ms ? `${analysis.execution_time_ms}ms` : '0ms'}
                     </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Input Bar (Directly runnable from Analysis view) */}
-              <div className="neo-brutal-card p-5 bg-[#fffef0]">
-                <div className="flex flex-col sm:flex-row gap-3 items-center">
-                  <div className="flex-1 w-full">
-                    <label className="text-[11px] font-black uppercase font-mono text-gray-800 block mb-1">
-                      Code Change Query / Diff:
-                    </label>
-                    <input
-                      type="text"
-                      className="neo-brutal-input text-xs py-2.5 w-full bg-white"
-                      placeholder="e.g. Changed learning_rate from 0.01 to 0.001 in train.py line 42"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && query.trim() && handleAnalyseImpact()}
-                    />
-                  </div>
-                  <div className="flex items-end gap-2 shrink-0 pt-4 sm:pt-0">
-                    <button
-                      className="neo-brutal-btn-primary text-xs py-2.5 px-6 font-black"
-                      onClick={handleAnalyseImpact}
-                      disabled={!query.trim() || isAnalyzing}
-                    >
-                      {isAnalyzing ? 'Analyzing…' : '⚡ Run Analysis'}
-                    </button>
-                    <button
-                      className="neo-brutal-btn-white text-xs py-2.5 px-4"
-                      onClick={() => setActiveSidebarNav('workspace')}
-                    >
-                      Workspace 📂
-                    </button>
                   </div>
                 </div>
               </div>
