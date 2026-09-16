@@ -330,21 +330,7 @@ export default function App() {
                 </div>
 
                 <div className="neo-brutal-card p-6 bg-white">
-                  <h3 className="text-xs font-black uppercase font-mono tracking-wider text-black pb-2 border-b-2 border-black mb-3">
-                    Manuscript Sections ({paperAST.sections.length} Sections)
-                  </h3>
-                  <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1 text-xs">
-                    {paperAST.sections.length === 0 ? (
-                      <p className="text-gray-500 font-mono py-4 text-center">No sections loaded yet. Upload PDF or LaTeX.</p>
-                    ) : (
-                      paperAST.sections.map((sec, idx) => (
-                        <div key={idx} className="p-2.5 border-2 border-black rounded-lg bg-[#faf9f6] flex items-center justify-between">
-                          <span className="font-bold text-black">{sec.title || sec.id}</span>
-                          <span className="text-[10px] font-mono text-gray-500">#{sec.id}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <PaperImpactViewer paperAST={paperAST} analysis={analysis} />
                 </div>
               </div>
             </div>
