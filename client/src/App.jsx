@@ -231,8 +231,20 @@ export default function App() {
           </div>
         </div>
 
-        {/* Top Right: Analysis Nav Button (Locked until Code + Paper loaded) */}
-        <div className="flex items-center">
+        {/* Top Right: Star on GitHub & Analysis Nav Button */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <a
+            id="star-github-btn"
+            href="https://github.com/monish250507/Radly"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Star Radly on GitHub"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-[#fde047] text-black border-2 border-black shadow-[2px_2px_0px_#000] hover:bg-[#facc15] transition-all"
+          >
+            <span className="text-sm leading-none">⭐</span>
+            <span className="hidden sm:inline">Star on GitHub</span>
+          </a>
+
           <button
             id="nav-analysis-btn"
             onClick={() => {
