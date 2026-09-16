@@ -191,49 +191,45 @@ export default function App() {
   const equationsCount = (analysis?.affected_equations?.length || 0) + (analysis?.affected_tables?.length || 0);
 
   return (
-    <div className="min-h-screen flex bg-[#f8fafc] text-[#0f172a] font-sans antialiased">
+    <div className="min-h-screen flex bg-[#faf9f6] text-black font-sans antialiased">
       
-      {/* Left Purple Rail Sidebar - Reference Design */}
-      <aside className="w-16 md:w-60 bg-[#5b45e0] text-white flex flex-col justify-between shrink-0 transition-all">
+      {/* Neo-Brutalist Purple Rail Sidebar - Reference Design */}
+      <aside className="w-16 md:w-64 bg-[#6355d8] text-white flex flex-col justify-between shrink-0 border-r-2 border-black">
         <div>
           {/* Logo & Brand */}
-          <div className="h-16 flex items-center px-4 md:px-6 gap-3 border-b border-indigo-400/20">
-            <div className="w-8 h-8 rounded-lg bg-white text-[#5b45e0] font-black text-base flex items-center justify-center shadow-sm">
+          <div className="h-16 flex items-center px-4 md:px-6 gap-3 border-b-2 border-black bg-[#5345c7]">
+            <div className="w-9 h-9 rounded-lg bg-[#fde047] text-black font-black text-lg flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
               R
             </div>
             <div className="hidden md:block">
-              <span className="font-bold text-base tracking-tight">Radly</span>
-              <span className="text-[10px] block text-indigo-200 uppercase font-medium tracking-wider">Impact Studio</span>
+              <span className="font-black text-lg tracking-tight font-mono">Radly</span>
+              <span className="text-[10px] block text-[#fde047] font-bold uppercase tracking-wider">Impact Studio</span>
             </div>
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-3 space-y-1.5 mt-2">
+          <nav className="p-3 space-y-2 mt-3">
             <button
               onClick={() => setActiveSidebarNav('analysis')}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
                 activeSidebarNav === 'analysis'
-                  ? 'bg-white/15 text-white shadow-inner'
-                  : 'text-indigo-100 hover:bg-white/10 hover:text-white'
+                  ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
+                  : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
               }`}
             >
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="hidden md:inline">Impact Analysis</span>
+              <span className="text-base leading-none">⚡</span>
+              <span className="hidden md:inline">Analysis</span>
             </button>
 
             <button
               onClick={() => setActiveSidebarNav('workspace')}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2 border-black ${
                 activeSidebarNav === 'workspace'
-                  ? 'bg-white/15 text-white shadow-inner'
-                  : 'text-indigo-100 hover:bg-white/10 hover:text-white'
+                  ? 'bg-white text-black shadow-[3px_3px_0px_#000]'
+                  : 'bg-[#6355d8] text-white hover:bg-[#5345c7] shadow-[2px_2px_0px_#000]'
               }`}
             >
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+              <span className="text-base leading-none">📂</span>
               <span className="hidden md:inline">Workspace</span>
             </button>
 
@@ -241,46 +237,43 @@ export default function App() {
               href="/api/docs"
               target="_blank"
               rel="noreferrer"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-indigo-100 hover:bg-white/10 hover:text-white transition-all"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider bg-[#6355d8] text-white hover:bg-[#5345c7] transition-all border-2 border-black shadow-[2px_2px_0px_#000]"
             >
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
+              <span className="text-base leading-none">📖</span>
               <span className="hidden md:inline">API Docs</span>
             </a>
           </nav>
         </div>
 
-        {/* Sidebar Footer Status */}
-        <div className="p-3 m-3 bg-indigo-800/40 rounded-xl hidden md:block border border-indigo-400/20 text-xs">
-          <p className="font-semibold text-white">Groq gpt-oss-120b</p>
-          <div className="flex items-center gap-1.5 text-indigo-200 text-[11px] mt-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        {/* Sidebar Status Box */}
+        <div className="p-3.5 m-3 bg-[#fffef0] text-black border-2 border-black rounded-xl hidden md:block shadow-[3px_3px_0px_#000] text-xs">
+          <p className="font-black uppercase tracking-wide font-mono">Groq 120B Connected</p>
+          <div className="flex items-center gap-1.5 text-gray-700 text-[11px] font-bold mt-1">
+            <span className="w-2 h-2 rounded-full bg-[#86efac] border border-black" />
             Stateless · Zero-DB
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content Pane */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
-        {/* Top Header / Breadcrumb Bar */}
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Studio</span>
-            <span className="text-slate-300">/</span>
-            <span className="text-xs font-semibold text-slate-700">Code & Paper Blast Radius</span>
+        {/* Top Header Bar */}
+        <header className="h-16 bg-white border-b-2 border-black px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3 font-mono text-xs font-bold">
+            <span className="text-gray-500 uppercase">STUDIO</span>
+            <span>/</span>
+            <span className="text-black uppercase">RESEARCH BLAST RADIUS</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Production Ready
+            <span className="neo-badge neo-badge-verified">
+              ● READY FOR DEPLOYMENT
             </span>
           </div>
         </header>
 
-        {/* Body Container */}
+        {/* Workspace Canvas */}
         <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
           
           {/* Header Title Section */}
@@ -296,15 +289,13 @@ export default function App() {
 
           {/* Error Banner */}
           {errorMsg && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center justify-between shadow-sm">
+            <div className="p-4 bg-[#fca5a5] border-2 border-black text-black text-xs font-bold rounded-xl flex items-center justify-between shadow-[3px_3px_0px_#000]">
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span className="font-medium">{errorMsg}</span>
+                <span>⚠</span>
+                <span>{errorMsg}</span>
               </div>
               <button
-                className="text-xs font-semibold text-red-600 hover:text-red-800 ml-4"
+                className="neo-brutal-btn-white text-xs py-1 px-2"
                 onClick={() => setErrorMsg('')}
               >
                 Dismiss
@@ -312,52 +303,52 @@ export default function App() {
             </div>
           )}
 
-          {/* 3 Metric Summary Cards (from Reference Design) */}
+          {/* 3 Neo-Brutalist Stat Cards (Matching Reference Grid) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div className="radly-card p-5">
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-medium">
-                <span>Code Symbols Indexed</span>
-                <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+            <div className="neo-brutal-card p-5 bg-white">
+              <div className="flex items-center justify-between text-xs font-extrabold uppercase font-mono text-gray-700">
+                <span>Code Symbols</span>
+                <span className="neo-badge neo-badge-neutral">
                   AST Tree
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-[var(--text-main)]">{codeSymbols.length}</span>
-                <span className="text-xs text-[var(--text-subtle)]">from {ingestedFilesCount} files</span>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-black">{codeSymbols.length}</span>
+                <span className="text-xs font-bold text-gray-600">from {ingestedFilesCount} files</span>
               </div>
             </div>
 
-            <div className="radly-card p-5">
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-medium">
-                <span>Manuscript Sections</span>
-                <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+            <div className="neo-brutal-card p-5 bg-white">
+              <div className="flex items-center justify-between text-xs font-extrabold uppercase font-mono text-gray-700">
+                <span>Paper Sections</span>
+                <span className="neo-badge neo-badge-neutral">
                   Structure
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-[var(--text-main)]">{paperAST.sections.length}</span>
-                <span className="text-xs text-[var(--text-subtle)]">parsed sections</span>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-black">{paperAST.sections.length}</span>
+                <span className="text-xs font-bold text-gray-600">parsed sections</span>
               </div>
             </div>
 
-            <div className="radly-card p-5">
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-medium">
-                <span>Blast Radius Status</span>
-                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded ${
-                  riskLevel === 'CRITICAL' ? 'bg-red-50 text-red-700' :
-                  riskLevel === 'HIGH'     ? 'bg-orange-50 text-orange-700' :
-                  riskLevel === 'MAJOR'    ? 'bg-amber-50 text-amber-700' :
-                  riskLevel === 'MINOR'    ? 'bg-sky-50 text-sky-700' :
-                                             'bg-slate-50 text-slate-500'
+            <div className="neo-brutal-card p-5 bg-white">
+              <div className="flex items-center justify-between text-xs font-extrabold uppercase font-mono text-gray-700">
+                <span>Risk Status</span>
+                <span className={`neo-badge ${
+                  riskLevel === 'CRITICAL' ? 'neo-badge-critical' :
+                  riskLevel === 'HIGH'     ? 'neo-badge-high' :
+                  riskLevel === 'MAJOR'    ? 'neo-badge-major' :
+                  riskLevel === 'MINOR'    ? 'neo-badge-minor' :
+                                             'neo-badge-neutral'
                 }`}>
                   {riskLevel}
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-[var(--text-main)]">
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-3xl font-black font-mono text-black">
                   {analysis ? `${affectedSectionsCount} Affected` : 'Ready'}
                 </span>
-                <span className="text-xs text-[var(--text-subtle)]">
+                <span className="text-xs font-bold text-gray-600">
                   {analysis?.execution_time_ms ? `${analysis.execution_time_ms}ms` : '0ms'}
                 </span>
               </div>
@@ -387,22 +378,22 @@ export default function App() {
           />
 
           {/* Results Navigation Bar */}
-          <div className="pt-2 border-t border-slate-200">
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <div className="pt-2 border-t-2 border-black">
+            <div className="flex items-center gap-2 border-b-2 border-black pb-2">
               <button
-                className={`nav-tab ${activeTab === 'overview' ? 'nav-tab-active' : ''}`}
+                className={`neo-brutal-tab ${activeTab === 'overview' ? 'neo-brutal-tab-active' : ''}`}
                 onClick={() => setActiveTab('overview')}
               >
                 Overview ({affectedSectionsCount})
               </button>
               <button
-                className={`nav-tab ${activeTab === 'paper' ? 'nav-tab-active' : ''}`}
+                className={`neo-brutal-tab ${activeTab === 'paper' ? 'neo-brutal-tab-active' : ''}`}
                 onClick={() => setActiveTab('paper')}
               >
-                Manuscript Details ({paperAST.sections.length})
+                Manuscript ({paperAST.sections.length})
               </button>
               <button
-                className={`nav-tab ${activeTab === 'experiments' ? 'nav-tab-active' : ''}`}
+                className={`neo-brutal-tab ${activeTab === 'experiments' ? 'neo-brutal-tab-active' : ''}`}
                 onClick={() => setActiveTab('experiments')}
               >
                 Equations & Tables ({equationsCount})
@@ -416,27 +407,25 @@ export default function App() {
               {activeTab === 'overview' && (
                 <div>
                   {!analysis ? (
-                    <div className="radly-card p-12 text-center space-y-2">
-                      <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                    <div className="neo-brutal-card p-12 text-center space-y-2 bg-white">
+                      <div className="w-12 h-12 rounded-xl bg-[#fde047] text-black font-black text-2xl mx-auto flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
+                        ⚡
                       </div>
-                      <h4 className="text-sm font-semibold text-[var(--text-main)]">Ready to Analyze Impact</h4>
-                      <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
-                        Load your repository, upload your paper, and enter a proposed change query to generate an impact report.
+                      <h4 className="text-sm font-black uppercase font-mono text-black">Ready to Analyze Impact</h4>
+                      <p className="text-xs text-gray-700 max-w-md mx-auto font-medium">
+                        Load your repository, upload your paper, and enter a proposed change query to generate the blast radius report.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {analysis.affected_sections?.length > 0 ? (
-                        <div className="radly-card p-6 space-y-4">
-                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                            <h3 className="text-sm font-semibold text-[var(--text-main)]">
+                        <div className="neo-brutal-card p-6 space-y-4 bg-white">
+                          <div className="flex items-center justify-between pb-2 border-b-2 border-black">
+                            <h3 className="text-sm font-extrabold uppercase font-mono text-black">
                               Identified Affected Sections ({analysis.affected_sections.length})
                             </h3>
-                            <span className="text-xs text-[var(--text-muted)]">
-                              Impact Blast Radius Summary
+                            <span className="text-xs font-bold text-gray-600">
+                              Blast Radius Summary
                             </span>
                           </div>
 
@@ -444,22 +433,22 @@ export default function App() {
                             {analysis.affected_sections.map((sec, i) => (
                               <div
                                 key={i}
-                                className="p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors bg-white flex items-start gap-4"
+                                className="p-4 rounded-xl border-2 border-black bg-white shadow-[3px_3px_0px_#000] flex items-start gap-4"
                               >
-                                <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full shrink-0 ${
-                                  sec.risk === 'CRITICAL' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                  sec.risk === 'HIGH'     ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                                  sec.risk === 'MAJOR'    ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                                                            'bg-sky-50 text-sky-700 border border-sky-200'
+                                <span className={`neo-badge shrink-0 ${
+                                  sec.risk === 'CRITICAL' ? 'neo-badge-critical' :
+                                  sec.risk === 'HIGH'     ? 'neo-badge-high' :
+                                  sec.risk === 'MAJOR'    ? 'neo-badge-major' :
+                                                            'neo-badge-minor'
                                 }`}>
                                   {sec.risk || 'MINOR'}
                                 </span>
                                 <div className="space-y-1">
-                                  <p className="text-xs font-semibold text-[var(--text-main)]">{sec.title}</p>
-                                  <p className="text-xs text-[var(--text-muted)] leading-relaxed">{sec.reason}</p>
+                                  <p className="text-xs font-bold text-black">{sec.title}</p>
+                                  <p className="text-xs text-gray-700 font-medium leading-relaxed">{sec.reason}</p>
                                   {sec.suggested_text && (
-                                    <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700">
-                                      <span className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Suggested Diff:</span>
+                                    <div className="mt-2 p-2.5 bg-[#fffef0] border-2 border-black rounded-lg text-xs font-mono text-black shadow-[2px_2px_0px_#000]">
+                                      <span className="text-[10px] font-extrabold uppercase text-gray-600 block mb-1">Suggested Revision:</span>
                                       {sec.suggested_text}
                                     </div>
                                   )}
@@ -469,7 +458,7 @@ export default function App() {
                           </div>
                         </div>
                       ) : (
-                        <div className="radly-card p-8 text-center text-xs text-emerald-700 font-semibold bg-emerald-50/50 border-emerald-200">
+                        <div className="neo-brutal-card p-8 text-center text-xs font-bold bg-[#86efac] text-black">
                           ✓ No paper sections appear to be adversely impacted by this code modification.
                         </div>
                       )}
@@ -480,7 +469,7 @@ export default function App() {
 
               {/* TAB 2: MANUSCRIPT DETAILS */}
               {activeTab === 'paper' && (
-                <div className="radly-card p-6">
+                <div className="neo-brutal-card p-6 bg-white">
                   <PaperImpactViewer paperAST={paperAST} analysis={analysis} />
                 </div>
               )}
@@ -489,18 +478,18 @@ export default function App() {
               {activeTab === 'experiments' && (
                 <div className="space-y-4">
                   {analysis?.affected_equations?.length > 0 && (
-                    <div className="radly-card p-6 space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    <div className="neo-brutal-card p-6 space-y-3 bg-white">
+                      <h4 className="text-xs font-black uppercase tracking-wider font-mono text-black">
                         Affected Equations ({analysis.affected_equations.length})
                       </h4>
                       {analysis.affected_equations.map((eq, i) => (
-                        <div key={i} className="p-3 border border-slate-200 rounded-lg flex items-start gap-3 text-xs">
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                        <div key={i} className="p-3 border-2 border-black rounded-lg flex items-start gap-3 text-xs bg-[#fffef0] shadow-[2px_2px_0px_#000]">
+                          <span className="neo-badge neo-badge-major">
                             {eq.risk}
                           </span>
                           <div>
-                            <p className="font-semibold text-[var(--text-main)]">{eq.label}</p>
-                            <p className="text-[var(--text-muted)]">{eq.explanation}</p>
+                            <p className="font-bold text-black">{eq.label}</p>
+                            <p className="text-gray-700 font-medium">{eq.explanation}</p>
                           </div>
                         </div>
                       ))}
@@ -508,18 +497,18 @@ export default function App() {
                   )}
 
                   {analysis?.affected_tables?.length > 0 && (
-                    <div className="radly-card p-6 space-y-3">
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    <div className="neo-brutal-card p-6 space-y-3 bg-white">
+                      <h4 className="text-xs font-black uppercase tracking-wider font-mono text-black">
                         Affected Tables ({analysis.affected_tables.length})
                       </h4>
                       {analysis.affected_tables.map((tbl, i) => (
-                        <div key={i} className="p-3 border border-slate-200 rounded-lg flex items-start gap-3 text-xs">
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                        <div key={i} className="p-3 border-2 border-black rounded-lg flex items-start gap-3 text-xs bg-[#fffef0] shadow-[2px_2px_0px_#000]">
+                          <span className="neo-badge neo-badge-major">
                             {tbl.risk}
                           </span>
                           <div>
-                            <p className="font-semibold text-[var(--text-main)]">{tbl.label}</p>
-                            <p className="text-[var(--text-muted)]">{tbl.explanation}</p>
+                            <p className="font-bold text-black">{tbl.label}</p>
+                            <p className="text-gray-700 font-medium">{tbl.explanation}</p>
                           </div>
                         </div>
                       ))}
@@ -527,7 +516,7 @@ export default function App() {
                   )}
 
                   {!analysis?.affected_equations?.length && !analysis?.affected_tables?.length && (
-                    <div className="radly-card p-10 text-center text-xs text-[var(--text-muted)]">
+                    <div className="neo-brutal-card p-10 text-center text-xs font-bold text-gray-700 bg-white">
                       No mathematical equations or experimental tables affected by this change.
                     </div>
                   )}
@@ -537,8 +526,8 @@ export default function App() {
           </div>
         </main>
 
-        <footer className="py-6 text-center text-xs text-slate-400 border-t border-slate-200 mt-12">
-          Radly — Research Code &amp; Paper Impact Analyzer · Clean SaaS Edition
+        <footer className="py-6 text-center text-xs font-bold text-gray-600 border-t-2 border-black mt-12 bg-white">
+          Radly — Research Code &amp; Paper Impact Analyzer · Neo-Brutalist Edition
         </footer>
       </div>
     </div>

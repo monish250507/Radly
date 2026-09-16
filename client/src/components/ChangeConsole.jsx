@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Modern SaaS ChangeConsole — Clean stepped cards with zero clutter.
+ * Neo-Brutalism ChangeConsole — Crisp black borders, retro offset shadows, and vibrant purple action button.
  */
 export default function ChangeConsole({
   query,
@@ -27,30 +27,29 @@ export default function ChangeConsole({
 
   return (
     <div className="space-y-6 w-full">
-      {/* 2-Column Clean Ingestion Cards */}
+      {/* 2-Column Neo-Brutalist Setup Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Card 1: Code Repository */}
-        <div className="radly-card p-6 flex flex-col justify-between">
+        <div className="neo-brutal-card p-6 flex flex-col justify-between">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 font-semibold text-xs flex items-center justify-center border border-indigo-100">
+              <div className="flex items-center gap-2.5">
+                <span className="w-7 h-7 rounded-lg bg-[#6355d8] text-white font-black text-xs flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
                   1
                 </span>
-                <h3 className="text-sm font-semibold text-[var(--text-main)]">
+                <h3 className="text-sm font-extrabold text-black uppercase tracking-wide font-mono">
                   Code Repository
                 </h3>
               </div>
               {symbolsCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {symbolsCount} symbols · {ingestedFilesCount} file{ingestedFilesCount !== 1 ? 's' : ''}
+                <span className="neo-badge neo-badge-verified">
+                  ✓ {symbolsCount} symbols ({ingestedFilesCount} files)
                 </span>
               )}
             </div>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Index AST symbols, hyperparameters, and functions directly from a public repository or uploaded files.
+            <p className="text-xs text-gray-700 font-medium leading-relaxed">
+              Extract AST definitions, hyperparameters, and functions directly from GitHub or source files.
             </p>
 
             <div className="space-y-3 pt-2">
@@ -58,7 +57,7 @@ export default function ChangeConsole({
                 <input
                   id="repo-url-input"
                   type="text"
-                  className="radly-input text-xs"
+                  className="neo-brutal-input text-xs"
                   placeholder="https://github.com/owner/repository"
                   value={repoUrl}
                   onChange={(e) => setRepoUrl(e.target.value)}
@@ -66,23 +65,18 @@ export default function ChangeConsole({
                 />
                 <button
                   id="ingest-repo-btn"
-                  className="btn-primary text-xs shrink-0"
+                  className="neo-brutal-btn-primary text-xs shrink-0"
                   onClick={onIngestRepo}
                   disabled={isIngesting || !repoUrl.trim()}
                 >
-                  {isIngesting ? (
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                      Loading…
-                    </span>
-                  ) : 'Load Repo'}
+                  {isIngesting ? 'Loading…' : 'Load Repo'}
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-700 pt-2 border-t-2 border-black">
                 <span>Or upload source files:</span>
-                <label id="code-upload-label" className="btn-secondary text-xs cursor-pointer">
-                  Choose Files (.py, .js)
+                <label id="code-upload-label" className="neo-brutal-btn-white text-xs cursor-pointer">
+                  📁 Choose .py / .js
                   <input type="file" multiple accept=".py,.js,.ts,.json" className="hidden" onChange={onCodeFileUpload} />
                 </label>
               </div>
@@ -91,63 +85,50 @@ export default function ChangeConsole({
         </div>
 
         {/* Card 2: Research Paper */}
-        <div className="radly-card p-6 flex flex-col justify-between">
+        <div className="neo-brutal-card p-6 flex flex-col justify-between">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 font-semibold text-xs flex items-center justify-center border border-indigo-100">
+              <div className="flex items-center gap-2.5">
+                <span className="w-7 h-7 rounded-lg bg-[#6355d8] text-white font-black text-xs flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
                   2
                 </span>
-                <h3 className="text-sm font-semibold text-[var(--text-main)]">
-                  Research Manuscript
+                <h3 className="text-sm font-extrabold text-black uppercase tracking-wide font-mono">
+                  Research Paper
                 </h3>
               </div>
               {sectionsCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {sectionsCount} section{sectionsCount !== 1 ? 's' : ''} parsed
+                <span className="neo-badge neo-badge-verified">
+                  ✓ {sectionsCount} sections parsed
                 </span>
               )}
             </div>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Upload a scientific paper (PDF, DOCX) or paste LaTeX to extract section hierarchy, equations, and tables.
+            <p className="text-xs text-gray-700 font-medium leading-relaxed">
+              Upload a scientific PDF/DOCX or paste LaTeX to map sections, equations, and tables.
             </p>
 
             <div className="space-y-3 pt-2">
               <div className="flex gap-2">
                 <textarea
                   id="paper-text-input"
-                  className="radly-input text-xs h-10 resize-none py-2"
-                  placeholder="Paste LaTeX source or manuscript excerpt…"
+                  className="neo-brutal-input text-xs h-10 resize-none py-2"
+                  placeholder="Paste LaTeX source or text excerpt…"
                   value={paperText}
                   onChange={(e) => setPaperText(e.target.value)}
                 />
                 <button
                   id="parse-paper-btn"
-                  className="btn-primary text-xs shrink-0"
+                  className="neo-brutal-btn-primary text-xs shrink-0"
                   onClick={onParsePaper}
                   disabled={isParsingPaper || !paperText.trim()}
                 >
-                  {isParsingPaper ? (
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                      Parsing…
-                    </span>
-                  ) : 'Parse Text'}
+                  {isParsingPaper ? 'Parsing…' : 'Parse Text'}
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] pt-1 border-t border-[var(--border-color)]">
-                <span>Upload document:</span>
-                <label id="paper-upload-label" className="btn-secondary text-xs cursor-pointer">
-                  {isParsingPaper ? (
-                    <span className="flex items-center gap-1.5 text-indigo-600">
-                      <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
-                      Reading Document…
-                    </span>
-                  ) : (
-                    selectedFileName || 'Upload PDF / DOCX'
-                  )}
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-700 pt-2 border-t-2 border-black">
+                <span>Upload manuscript:</span>
+                <label id="paper-upload-label" className="neo-brutal-btn-white text-xs cursor-pointer">
+                  {isParsingPaper ? '⏳ Reading…' : (selectedFileName ? `📄 ${selectedFileName}` : '📄 Upload PDF / DOCX')}
                   <input type="file" accept=".pdf,.docx,.tex,.txt" className="hidden" onChange={onPaperFileUpload} />
                 </label>
               </div>
@@ -156,49 +137,44 @@ export default function ChangeConsole({
         </div>
       </div>
 
-      {/* Action Banner: Step 3 Change Query */}
-      <div className="radly-card p-6 bg-gradient-to-r from-white via-white to-indigo-50/40 border border-[var(--border-color)]">
-        <div className="space-y-3 max-w-3xl">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-semibold text-xs flex items-center justify-center">
+      {/* Step 3: Change Query Banner */}
+      <div className="neo-brutal-card p-6 bg-[#fffef0]">
+        <div className="space-y-3 max-w-4xl">
+          <div className="flex items-center gap-2.5">
+            <span className="w-7 h-7 rounded-lg bg-black text-[#fde047] font-black text-xs flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000]">
               3
             </span>
-            <h3 className="text-sm font-semibold text-[var(--text-main)]">
-              Specify Code Change or PR Diff
+            <h3 className="text-sm font-extrabold text-black uppercase tracking-wide font-mono">
+              Describe Code Change or Diff
             </h3>
           </div>
-          <p className="text-xs text-[var(--text-muted)]">
-            Describe your modification (e.g., hyperparameter tuning, function refactor, or paste a Git diff snippet) to analyze impact across manuscript claims.
+          <p className="text-xs text-gray-700 font-medium">
+            Specify the parameter mutation, PR diff, or refactoring to track affected claims across the paper.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3 pt-1">
             <input
               id="change-query-input"
               type="text"
-              className="radly-input text-xs flex-1 py-3"
-              placeholder="e.g. Changed learning_rate from 0.01 to 0.001 in train.py line 42, or updated batch size"
+              className="neo-brutal-input text-xs flex-1 py-3 bg-white"
+              placeholder="e.g. Changed learning_rate from 0.01 to 0.001 in train.py line 42"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && canAnalyse && onCalculate()}
             />
             <button
               id="analyse-impact-btn"
-              className="btn-primary text-xs px-6 py-3 shrink-0 whitespace-nowrap shadow-md"
+              className="neo-brutal-btn-primary text-xs px-8 py-3 shrink-0 whitespace-nowrap text-white font-black"
               onClick={onCalculate}
               disabled={!canAnalyse}
             >
               {isAnalyzing ? (
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-                  Analyzing Impact…
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  ANALYSING BLAST RADIUS…
                 </span>
               ) : (
-                <span className="flex items-center gap-2 font-semibold">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Analyze Impact
-                </span>
+                '⚡ ANALYSE IMPACT'
               )}
             </button>
           </div>

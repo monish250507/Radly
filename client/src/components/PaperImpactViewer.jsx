@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import VerificationBadge from './VerificationBadge.jsx';
-import EvidencePanel from './EvidencePanel.jsx';
 
 export default function PaperImpactViewer({ paperAST, analysis }) {
   const [activeDiffSection, setActiveDiffSection] = useState(null);
@@ -8,8 +6,8 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
 
   if (!paperAST || !paperAST.sections || paperAST.sections.length === 0) {
     return (
-      <div className="p-8 text-center text-[var(--text-muted)] text-xs">
-        No manuscript loaded. Upload a PDF or paste LaTeX in the workspace to view impact mapping.
+      <div className="p-8 text-center text-gray-600 font-mono text-xs font-semibold">
+        No manuscript loaded. Upload a PDF or paste LaTeX to map sections.
       </div>
     );
   }
@@ -39,13 +37,13 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
     return match || null;
   };
 
-  const getRiskClass = (risk) => {
+  const getRiskBadge = (risk) => {
     switch ((risk || '').toUpperCase()) {
-      case 'CRITICAL': return 'badge-risk-critical';
-      case 'HIGH': return 'badge-risk-high';
-      case 'MAJOR': return 'badge-risk-major';
-      case 'MINOR': return 'badge-risk-minor';
-      default: return 'badge-risk-none';
+      case 'CRITICAL': return 'neo-badge neo-badge-critical';
+      case 'HIGH':     return 'neo-badge neo-badge-high';
+      case 'MAJOR':    return 'neo-badge neo-badge-major';
+      case 'MINOR':    return 'neo-badge neo-badge-minor';
+      default:         return 'neo-badge neo-badge-neutral';
     }
   };
 
@@ -57,12 +55,12 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+      <div className="flex items-center justify-between pb-3 border-b-2 border-black">
         <div>
-          <h3 className="text-sm font-semibold text-[var(--text-main)]">
-            Manuscript Section Impact Mapping
+          <h3 className="text-sm font-extrabold text-black uppercase font-mono tracking-wider">
+            Manuscript Section Impact Matrix
           </h3>
-          <p className="text-xs text-[var(--text-muted)]">
+          <p className="text-xs text-gray-600 font-medium">
             {paperAST.sections.length} total sections analyzed against code changes
           </p>
         </div>
@@ -77,24 +75,24 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
           return (
             <div
               key={section.id}
-              className={`radly-card p-4 transition-all ${
+              className={`p-4 rounded-xl border-2 border-black transition-all ${
                 isAffected
-                  ? 'border-indigo-200 bg-white ring-1 ring-indigo-50/50'
-                  : 'bg-white opacity-85'
+                  ? 'bg-white shadow-[3px_3px_0px_#000]'
+                  : 'bg-white/80 shadow-[2px_2px_0px_#000] opacity-90'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[var(--text-main)]">
+                    <span className="text-xs font-bold text-black">
                       {section.title || section.id}
                     </span>
-                    <span className="text-[10px] text-[var(--text-subtle)] font-mono">
+                    <span className="text-[10px] text-gray-500 font-mono">
                       #{section.id}
                     </span>
                   </div>
                   {isAffected && impact.reason && (
-                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                    <p className="text-xs text-gray-700 font-medium leading-relaxed">
                       {impact.reason}
                     </p>
                   )}
@@ -102,39 +100,39 @@ export default function PaperImpactViewer({ paperAST, analysis }) {
 
                 <div className="flex items-center gap-2 shrink-0">
                   {isAffected ? (
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getRiskClass(impact.risk)}`}>
+                    <span className={getRiskBadge(impact.risk)}>
                       {impact.risk || 'AFFECTED'}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+                    <span className="neo-badge neo-badge-neutral">
                       Unaffected
                     </span>
                   )}
 
                   {isAffected && impact.suggested_text && (
                     <button
-                      className="btn-secondary text-xs py-1 px-2.5"
+                      className="neo-brutal-btn-white text-xs py-1 px-2.5"
                       onClick={() => setActiveDiffSection(isDiffOpen ? null : section.id)}
                     >
-                      {isDiffOpen ? 'Hide Revision' : 'View Revision'}
+                      {isDiffOpen ? 'Hide Diff' : 'View Diff'}
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Proposed Revision View */}
+              {/* Proposed Revision */}
               {isAffected && isDiffOpen && impact.suggested_text && (
-                <div className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-2">
+                <div className="mt-3 pt-3 border-t-2 border-black space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-emerald-700">Proposed Manuscript Update:</span>
+                    <span className="font-extrabold text-black font-mono">Proposed LaTeX Update:</span>
                     <button
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                      className="text-xs font-bold text-[#6355d8] hover:underline"
                       onClick={() => handleCopy(impact.suggested_text, section.id)}
                     >
                       {copiedId === section.id ? '✓ Copied' : 'Copy LaTeX'}
                     </button>
                   </div>
-                  <pre className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 overflow-x-auto whitespace-pre-wrap">
+                  <pre className="p-3 bg-[#fffef0] border-2 border-black rounded-lg text-xs font-mono text-black overflow-x-auto whitespace-pre-wrap shadow-[2px_2px_0px_#000]">
                     {impact.suggested_text}
                   </pre>
                 </div>
