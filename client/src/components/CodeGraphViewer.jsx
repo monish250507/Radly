@@ -21,22 +21,34 @@ export default function CodeGraphViewer({ symbols }) {
 
   const displayed = filtered.slice(0, page * PAGE_SIZE);
 
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight < 80) {
+      if (displayed.length < filtered.length) {
+        setPage(p => p + 1);
+      }
+    }
+  };
+
   return (
     <div className="space-y-3 w-full">
       <div className="flex items-center justify-between gap-2">
         <input
           type="text"
           className="neo-brutal-input text-xs py-1.5 px-2.5 w-full max-w-xs"
-          placeholder="Filter symbols..."
+          placeholder="Search symbols (e.g. lora, rank, train)..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
         />
         <span className="text-[11px] font-mono text-gray-600 shrink-0">
-          Showing {displayed.length} of {filtered.length}
+          {displayed.length} of {filtered.length} visible
         </span>
       </div>
 
-      <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 w-full">
+      <div
+        onScroll={handleScroll}
+        className="space-y-2 max-h-[400px] overflow-y-auto pr-1 w-full"
+      >
         {displayed.map((sym, idx) => (
           <div
             key={idx}
@@ -58,12 +70,9 @@ export default function CodeGraphViewer({ symbols }) {
         ))}
 
         {displayed.length < filtered.length && (
-          <button
-            onClick={() => setPage(p => p + 1)}
-            className="neo-brutal-btn-white text-xs w-full py-2 font-bold mt-2"
-          >
-            Load Next 50 Symbols ({filtered.length - displayed.length} remaining)
-          </button>
+          <div className="text-center py-2 text-xs font-mono text-gray-500 font-bold">
+            Scroll down to load more ({filtered.length - displayed.length} remaining)...
+          </div>
         )}
       </div>
     </div>
