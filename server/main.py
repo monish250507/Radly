@@ -339,18 +339,14 @@ async def health_check():
 @app.get("/api/domain/schema")
 async def domain_schema():
     from .domain.models import ArtifactType, EvidenceType, VerificationStatus
-    from .engine.persistence.db_adapter import get_db_provider, SqliteAdapter, PostgresAdapter, InMemoryAdapter
-    provider = get_db_provider()
-    mode = "sqlite" if isinstance(provider, SqliteAdapter) else ("postgres" if isinstance(provider, PostgresAdapter) else "in-memory")
-    is_durable = not isinstance(provider, InMemoryAdapter)
     return {
         "schemaVersion": SCHEMA_VERSION,
         "artifactTypes": [e.value for e in ArtifactType],
         "evidenceTypes": [e.value for e in EvidenceType],
         "verificationStatuses": [e.value for e in VerificationStatus],
-        "persistenceMode": mode,
-        "persistenceDurable": is_durable,
-        "note": f"Active persistence: {mode} (durable: {is_durable})."
+        "persistenceMode": "in-memory",
+        "persistenceDurable": False,
+        "note": "Active persistence: in-memory (cloud-optimized, zero-db)."
     }
 
 dist_path = Path(__file__).parent.parent / "dist"

@@ -1,5 +1,6 @@
 # Multi-stage Dockerfile for Radly
-# Compatible with Hugging Face Spaces, Render, Koyeb, Railway, and local Docker
+# Optimized for Render, Hugging Face Spaces, Koyeb, Railway, and local Docker
+# 100% Stateless & Zero-DB: Ready for 1-click cloud deployment
 
 # Stage 1: Build React Frontend
 FROM node:20-slim AS frontend-builder
@@ -18,32 +19,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Hugging Face Spaces runs as user 1000 by default
+# Run as non-root user for security and cloud platform compliance
 RUN useradd -m -u 1000 user
 
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    PORT=7860 \
-    RBR_DB_URL="sqlite+pysqlite:////home/user/app/rbr_local.db"
+    PORT=5000
 
 WORKDIR /home/user/app
 
-# Install Python dependencies
+# Install Python dependencies (no asyncpg/compiler needed)
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend source, migrations, cli, and built frontend assets
+# Copy backend source, cli, and built frontend assets
 COPY --chown=user:user server ./server
-COPY --chown=user:user infra ./infra
 COPY --chown=user:user cli.py ./
 COPY --chown=user:user --from=frontend-builder /app/dist ./dist
 
-# Switch to non-root user (UID 1000) for security and Hugging Face compatibility
+# Switch to non-root user (UID 1000)
 USER user
 
-# Hugging Face Spaces standard HTTP port is 7860
-EXPOSE 7860
+# Default port exposure
+EXPOSE 5000
 
-# Run migrations and start uvicorn dynamically bound to $PORT (defaulting to 7860)
-CMD ["sh", "-c", "python infra/migrate.py && python -m uvicorn server.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
+# Start uvicorn dynamically bound to $PORT provided by host (Render provides $PORT)
+CMD ["sh", "-c", "python -m uvicorn server.main:app --host 0.0.0.0 --port ${PORT:-5000}"]

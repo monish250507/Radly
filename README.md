@@ -140,17 +140,13 @@ cp .env.example .env
 ```
 Edit `.env` and set your Groq API key:
 ```ini
-RBR_LLM_API_KEY=gsk_your_groq_api_key_here
-RBR_LLM_MODEL=openai/gpt-oss-120b
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-### 3. Run Database Migrations
+*(Zero database configuration required — Radly runs completely in-memory!)*
 
-```bash
-python infra/migrate.py
-```
-
-### 4. Start Development Servers
+### 3. Start Development Servers
 
 You can start both backend and frontend concurrently:
 ```bash
@@ -169,19 +165,26 @@ Open your browser at **`http://localhost:3000`**.
 
 ---
 
+## 🚀 Deploy to Render (1-Click Zero-DB Deployment)
+
+Radly is preconfigured for hassle-free deployment on [Render](https://render.com):
+
+1. **Connect Repository**: In the Render Dashboard, click **New +** -> **Blueprint** and connect your GitHub repository (`monish250507/Radly`), or create a **Web Service** using **Docker**.
+2. **Environment Variables**: Set just one variable in Render:
+   - `GROQ_API_KEY`: Your Groq API key (`gsk_...`)
+   - *(Optional)* `GROQ_MODEL`: `openai/gpt-oss-120b` (default)
+3. Render will build the Docker container and bind dynamically to Render's assigned `$PORT`. No database addon, disk, or migration setup is needed!
+
+---
+
 ## 🤗 Deploy to Hugging Face Spaces (100% Free — 16 GB RAM)
 
-Radly is fully tailored for [Hugging Face Spaces](https://huggingface.co/spaces) using Docker:
+Radly is also fully tailored for [Hugging Face Spaces](https://huggingface.co/spaces) using Docker:
 
-1. **Create a Space**: Go to [huggingface.co/new-space](https://huggingface.co/new-space), enter a name, choose **Docker** SDK, and select **Blank**.
-2. **Push Code**: Push this repository to your Space Git remote or connect your GitHub repository.
-3. **Configure Secrets**: In your Space's **Settings** -> **Variables and secrets**, add:
-   - `RBR_LLM_API_KEY`: Your Groq API key (`gsk_...`)
-   - `RBR_LLM_PROVIDER`: `groq`
-   - `RBR_LLM_MODEL`: `openai/gpt-oss-120b` (or `llama-3.3-70b-versatile`)
-   - `JWT_SECRET`: A secure 32+ character string
-   - *(Optional)* `RBR_DB_URL`: Your free PostgreSQL connection string from [Neon.tech](https://neon.tech)
-4. Hugging Face Spaces will automatically build the Docker image, map port `7860`, run database migrations, and serve the application with **2 vCPUs and 16 GB of RAM** at zero cost!
+1. **Create a Space**: Go to [huggingface.co/new-space](https://huggingface.co/new-space), choose **Docker** SDK, and select **Blank**.
+2. **Push Code**: Push this repository to your Space Git remote.
+3. **Configure Secret**: In **Settings** -> **Variables and secrets**, add:
+   - `GROQ_API_KEY`: Your Groq API key (`gsk_...`)
 
 ---
 

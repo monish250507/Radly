@@ -20,7 +20,7 @@ class Config:
     class Groq:
         API_KEY = os.environ.get("GROQ_API_KEY") or os.environ.get("RBR_LLM_API_KEY", "")
         CONFIGURED = bool(API_KEY)
-        DEFAULT_MODEL = os.environ.get("RBR_LLM_MODEL", "llama-3.3-70b-versatile")
+        DEFAULT_MODEL = os.environ.get("GROQ_MODEL") or os.environ.get("RBR_LLM_MODEL", "openai/gpt-oss-120b")
         MAX_RETRIES = 2
         TIMEOUT_MS = 15000
 

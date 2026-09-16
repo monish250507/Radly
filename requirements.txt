@@ -9,5 +9,4 @@ python-dotenv
 
 pypdf
 python-docx
-asyncpg
 PyJWT
