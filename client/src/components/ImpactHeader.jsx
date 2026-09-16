@@ -44,9 +44,11 @@ export default function ImpactHeader({
         {analysis && (
           <button
             onClick={onExportReport}
-            className="neo-brutal-btn-white text-xs"
+            className="neo-brutal-btn-primary text-xs flex items-center gap-2 px-3.5 py-2 font-black text-white"
+            title="Download or Print Human-Readable PDF Report"
           >
-            📥 Export Report (.json)
+            <span>📄</span>
+            <span>Export PDF Report</span>
           </button>
         )}
       </div>

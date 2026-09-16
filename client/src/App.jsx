@@ -3,6 +3,7 @@ import ImpactHeader from './components/ImpactHeader';
 import ChangeConsole from './components/ChangeConsole';
 import PaperImpactViewer from './components/PaperImpactViewer';
 import CodeGraphViewer from './components/CodeGraphViewer';
+import { generatePdfReport } from './utils/pdfReport';
 
 /**
  * Safe JSON fetch utility
@@ -172,24 +173,17 @@ export default function App() {
     }
   };
 
-  // Export analysis JSON
+  // Export analysis PDF report
   const handleExportReport = () => {
     if (!analysis) return;
-    const report = {
-      timestamp: new Date().toISOString(),
+    generatePdfReport({
+      analysis,
       query,
-      repository: repoUrl,
-      symbolsIndexedCount: codeSymbols.length,
-      sectionsCount: paperAST.sections.length,
-      analysis
-    };
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `radly-impact-report-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+      repoUrl,
+      codeSymbolsCount: totalSymbolsFound || codeSymbols.length,
+      paperSectionsCount: paperAST.sections.length,
+      selectedFileName
+    });
   };
 
   const riskLevel = (analysis?.risk_level || 'NONE').toUpperCase();
