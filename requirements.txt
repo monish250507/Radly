@@ -3,10 +3,7 @@ uvicorn[standard]
 pydantic
 httpx
 groq
-pytest
-pytest-asyncio
 python-dotenv
-
 pypdf
 python-docx
 PyJWT
