@@ -367,8 +367,13 @@ def extract_sections(text: str) -> list[dict[str, Any]]:
                     sec_dict['text'] = body_text
                     sections.append(sec_dict)
 
-            title = tex_match.group(2) if tex_match else re.sub(r'^[\d.]+\s*', '', clean_line).strip()
-            safe_title = re.sub(r'[^a-z0-9]+', '-', title.lower())
+            raw_title = tex_match.group(2) if tex_match else re.sub(r'^[\d.]+\s*', '', clean_line).strip()
+            # Normalize PDF font kerning artifacts like 'O UR METHOD' or 'L OW-R ANK'
+            norm_title = re.sub(r'\b([A-Z])\s+([A-Z]{2,})\b', r'\1\2', raw_title)
+            norm_title = re.sub(r'\b([A-Z]{2,})\s+([A-Z])\b', r'\1\2', norm_title)
+            norm_title = re.sub(r'\s*-\s*', '-', norm_title)
+            title = norm_title
+            safe_title = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
             sec_id = f"sec-{len(sections) + 1}-{safe_title}"
 
             current_section = {
