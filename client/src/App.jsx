@@ -248,15 +248,6 @@ export default function App() {
             </a>
           </nav>
         </div>
-
-        {/* Sidebar Status Box */}
-        <div className="p-3.5 m-3 bg-[#fffef0] text-black border-2 border-black rounded-xl hidden md:block shadow-[3px_3px_0px_#000] text-xs">
-          <p className="font-black uppercase tracking-wide font-mono">Groq 120B Connected</p>
-          <div className="flex items-center gap-1.5 text-gray-700 text-[11px] font-bold mt-1">
-            <span className="w-2 h-2 rounded-full bg-[#86efac] border border-black" />
-            Stateless · Zero-DB
-          </div>
-        </div>
       </aside>
 
       {/* Main Content Pane */}
@@ -269,12 +260,6 @@ export default function App() {
             <span>/</span>
             <span className="text-black uppercase">
               {activeSidebarNav === 'analysis' ? 'BLAST RADIUS ANALYSIS & RESULTS' : 'CODE & PAPER INGESTION WORKSPACE'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="neo-badge neo-badge-verified">
-              ● READY FOR DEPLOYMENT
             </span>
           </div>
         </header>
