@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import ImpactHeader from './components/ImpactHeader';
 import ChangeConsole from './components/ChangeConsole';
-import CodeGraphViewer from './components/CodeGraphViewer';
 import PaperImpactViewer from './components/PaperImpactViewer';
-import DependencyFlow from './components/DependencyFlow';
 
 /**
- * Robust JSON response handler. Handles Vercel 413 HTML responses safely.
+ * Safe JSON fetch utility
  */
 async function safeFetchJson(url, options) {
   const res = await fetch(url, options);
@@ -17,9 +15,7 @@ async function safeFetchJson(url, options) {
     data = JSON.parse(text);
   } catch (e) {
     if (res.status === 413 || text.includes('Request Entity Too Large')) {
-      throw new Error(
-        'PDF payload exceeds the 4.5 MB Vercel limit. Use a smaller file or paste the text excerpt.'
-      );
+      throw new Error('PDF payload is too large. Use a smaller document or paste text excerpt.');
     }
     throw new Error(text.slice(0, 100) || `Server returned HTTP ${res.status}`);
   }
@@ -30,47 +26,26 @@ async function safeFetchJson(url, options) {
   return data;
 }
 
-// ---------------------------------------------------------------------------
-// Tab definitions
-// ---------------------------------------------------------------------------
-const RESEARCHER_TABS = [
-  { id: 'overview',     label: () => 'Overview' },
-  { id: 'changes',      label: (a) => `Changes (${a?.affected_sections?.length ?? 0})` },
-  { id: 'paper',        label: (_, p) => `Paper Impact (${p?.sections?.length ?? 0})` },
-  { id: 'experiments',  label: (a) => `Experiments (${(a?.affected_equations?.length ?? 0) + (a?.affected_tables?.length ?? 0)})` },
-];
-
-const DEV_TABS = [
-  { id: 'lineage',  label: (a) => `Lineage Graph (${a?.lineage_graph?.length ?? 0})` },
-  { id: 'agents',   label: (a) => `Agent Trace (${a?.agent_collaboration_trace?.length ?? 0})` },
-  { id: 'code_ast', label: (_, __, c) => `Code AST (${c?.length ?? 0})` },
-];
-
-// ---------------------------------------------------------------------------
-// Main App
-// ---------------------------------------------------------------------------
 export default function App() {
-  const [repoUrl, setRepoUrl]                 = useState('');
-  const [query, setQuery]                     = useState('');
-  const [paperText, setPaperText]             = useState('');
+  const [repoUrl, setRepoUrl] = useState('');
+  const [query, setQuery] = useState('');
+  const [paperText, setPaperText] = useState('');
   const [selectedFileName, setSelectedFileName] = useState('');
 
-  const [codeSymbols, setCodeSymbols]         = useState([]);
+  const [codeSymbols, setCodeSymbols] = useState([]);
   const [ingestedFilesCount, setIngestedFilesCount] = useState(0);
-  const [paperAST, setPaperAST]               = useState({ sections: [], equations: [], tables: [], numbers: [] });
-  const [analysis, setAnalysis]               = useState(null);
+  const [paperAST, setPaperAST] = useState({ sections: [], equations: [], tables: [], numbers: [] });
+  const [analysis, setAnalysis] = useState(null);
 
   const [isIngestingCode, setIsIngestingCode] = useState(false);
-  const [isParsingPaper, setIsParsingPaper]   = useState(false);
-  const [isAnalyzing, setIsAnalyzing]         = useState(false);
-  const [errorMsg, setErrorMsg]               = useState('');
+  const [isParsingPaper, setIsParsingPaper] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const [activeTab, setActiveTab]             = useState('overview');
-  const [devMode, setDevMode]                 = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [activeSidebarNav, setActiveSidebarNav] = useState('analysis');
 
-  // -------------------------------------------------------------------------
-  // Data handlers
-  // -------------------------------------------------------------------------
+  // Ingest GitHub repository
   const handleIngestRepo = async () => {
     if (!repoUrl.trim()) return;
     setIsIngestingCode(true);
@@ -90,6 +65,7 @@ export default function App() {
     }
   };
 
+  // Upload local code files
   const handleCodeFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -118,6 +94,7 @@ export default function App() {
     }
   };
 
+  // Parse paper text / LaTeX
   const handleParsePaper = async () => {
     if (!paperText.trim()) return;
     setIsParsingPaper(true);
@@ -136,6 +113,7 @@ export default function App() {
     }
   };
 
+  // Upload PDF / DOCX
   const handlePaperFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -168,7 +146,7 @@ export default function App() {
     }
   };
 
-  // P1 FIX: renamed from handleCalculateBlastRadius
+  // Run impact analysis
   const handleAnalyseImpact = async () => {
     if (!query.trim()) return;
     setIsAnalyzing(true);
@@ -188,6 +166,7 @@ export default function App() {
     }
   };
 
+  // Export analysis JSON
   const handleExportReport = () => {
     if (!analysis) return;
     const report = {
@@ -207,42 +186,185 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  // -------------------------------------------------------------------------
-  // Tab switching — guard dev-only tabs when not in dev mode
-  // -------------------------------------------------------------------------
-  const allTabs = devMode ? [...RESEARCHER_TABS, ...DEV_TABS] : RESEARCHER_TABS;
-  const safeActiveTab = allTabs.find(t => t.id === activeTab) ? activeTab : 'overview';
+  const riskLevel = (analysis?.risk_level || 'NONE').toUpperCase();
+  const affectedSectionsCount = analysis?.affected_sections?.length || 0;
+  const equationsCount = (analysis?.affected_equations?.length || 0) + (analysis?.affected_tables?.length || 0);
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[var(--bg-color)] text-[var(--text-color)] flex flex-col items-center w-full font-sans transition-colors duration-300">
-      <div className="app-wrapper space-y-6 flex flex-col items-center w-full">
+    <div className="min-h-screen flex bg-[#f8fafc] text-[#0f172a] font-sans antialiased">
+      
+      {/* Left Purple Rail Sidebar - Reference Design */}
+      <aside className="w-16 md:w-60 bg-[#5b45e0] text-white flex flex-col justify-between shrink-0 transition-all">
+        <div>
+          {/* Logo & Brand */}
+          <div className="h-16 flex items-center px-4 md:px-6 gap-3 border-b border-indigo-400/20">
+            <div className="w-8 h-8 rounded-lg bg-white text-[#5b45e0] font-black text-base flex items-center justify-center shadow-sm">
+              R
+            </div>
+            <div className="hidden md:block">
+              <span className="font-bold text-base tracking-tight">Radly</span>
+              <span className="text-[10px] block text-indigo-200 uppercase font-medium tracking-wider">Impact Studio</span>
+            </div>
+          </div>
 
-        {/* Header */}
-        <ImpactHeader
-          analysis={analysis}
-          hasCode={codeSymbols.length > 0}
-          hasPaper={paperAST.sections.length > 0}
-          isIngesting={isIngestingCode}
-          isParsingPaper={isParsingPaper}
-          isAnalyzing={isAnalyzing}
-          onExportReport={handleExportReport}
-          devMode={devMode}
-          setDevMode={setDevMode}
-        />
+          {/* Navigation Links */}
+          <nav className="p-3 space-y-1.5 mt-2">
+            <button
+              onClick={() => setActiveSidebarNav('analysis')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
+                activeSidebarNav === 'analysis'
+                  ? 'bg-white/15 text-white shadow-inner'
+                  : 'text-indigo-100 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span className="hidden md:inline">Impact Analysis</span>
+            </button>
 
-        <main className="w-full space-y-6 flex flex-col items-center px-4">
-          {/* Error Alert */}
+            <button
+              onClick={() => setActiveSidebarNav('workspace')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
+                activeSidebarNav === 'workspace'
+                  ? 'bg-white/15 text-white shadow-inner'
+                  : 'text-indigo-100 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span className="hidden md:inline">Workspace</span>
+            </button>
+
+            <a
+              href="/api/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-indigo-100 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              <span className="hidden md:inline">API Docs</span>
+            </a>
+          </nav>
+        </div>
+
+        {/* Sidebar Footer Status */}
+        <div className="p-3 m-3 bg-indigo-800/40 rounded-xl hidden md:block border border-indigo-400/20 text-xs">
+          <p className="font-semibold text-white">Groq gpt-oss-120b</p>
+          <div className="flex items-center gap-1.5 text-indigo-200 text-[11px] mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Stateless · Zero-DB
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        {/* Top Header / Breadcrumb Bar */}
+        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Studio</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-xs font-semibold text-slate-700">Code & Paper Blast Radius</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Production Ready
+            </span>
+          </div>
+        </header>
+
+        {/* Body Container */}
+        <main className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+          
+          {/* Header Title Section */}
+          <ImpactHeader
+            analysis={analysis}
+            hasCode={codeSymbols.length > 0}
+            hasPaper={paperAST.sections.length > 0}
+            isIngesting={isIngestingCode}
+            isParsingPaper={isParsingPaper}
+            isAnalyzing={isAnalyzing}
+            onExportReport={handleExportReport}
+          />
+
+          {/* Error Banner */}
           {errorMsg && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-600 px-4 py-3 rounded-lg font-mono text-xs flex items-center justify-between w-full max-w-4xl">
-              <span className="font-semibold">⚠ {errorMsg}</span>
-              <button className="neo-btn-white py-1 px-3 text-xs ml-4" onClick={() => setErrorMsg('')}>Dismiss</button>
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="font-medium">{errorMsg}</span>
+              </div>
+              <button
+                className="text-xs font-semibold text-red-600 hover:text-red-800 ml-4"
+                onClick={() => setErrorMsg('')}
+              >
+                Dismiss
+              </button>
             </div>
           )}
 
-          {/* Input Console */}
+          {/* 3 Metric Summary Cards (from Reference Design) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="radly-card p-5">
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-medium">
+                <span>Code Symbols Indexed</span>
+                <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                  AST Tree
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-[var(--text-main)]">{codeSymbols.length}</span>
+                <span className="text-xs text-[var(--text-subtle)]">from {ingestedFilesCount} files</span>
+              </div>
+            </div>
+
+            <div className="radly-card p-5">
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-medium">
+                <span>Manuscript Sections</span>
+                <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                  Structure
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-[var(--text-main)]">{paperAST.sections.length}</span>
+                <span className="text-xs text-[var(--text-subtle)]">parsed sections</span>
+              </div>
+            </div>
+
+            <div className="radly-card p-5">
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-medium">
+                <span>Blast Radius Status</span>
+                <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded ${
+                  riskLevel === 'CRITICAL' ? 'bg-red-50 text-red-700' :
+                  riskLevel === 'HIGH'     ? 'bg-orange-50 text-orange-700' :
+                  riskLevel === 'MAJOR'    ? 'bg-amber-50 text-amber-700' :
+                  riskLevel === 'MINOR'    ? 'bg-sky-50 text-sky-700' :
+                                             'bg-slate-50 text-slate-500'
+                }`}>
+                  {riskLevel}
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-[var(--text-main)]">
+                  {analysis ? `${affectedSectionsCount} Affected` : 'Ready'}
+                </span>
+                <span className="text-xs text-[var(--text-subtle)]">
+                  {analysis?.execution_time_ms ? `${analysis.execution_time_ms}ms` : '0ms'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stepped Input Workspace */}
           <ChangeConsole
             query={query}
             setQuery={setQuery}
@@ -264,249 +386,159 @@ export default function App() {
             selectedFileName={selectedFileName}
           />
 
-          {/* Navigation Tabs
-              P1 FIX: Researcher-first tabs always visible.
-              Dev-mode tabs (Lineage Graph, Agent Trace, Code AST) only visible in Dev Mode.
-          */}
-          <div className="flex flex-wrap items-center justify-center gap-2 py-2 w-full max-w-4xl">
-            {RESEARCHER_TABS.map(tab => (
+          {/* Results Navigation Bar */}
+          <div className="pt-2 border-t border-slate-200">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
               <button
-                key={tab.id}
-                id={`tab-${tab.id}`}
-                className={`neo-tab ${safeActiveTab === tab.id ? 'neo-tab-active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
+                className={`nav-tab ${activeTab === 'overview' ? 'nav-tab-active' : ''}`}
+                onClick={() => setActiveTab('overview')}
               >
-                {tab.label(analysis, paperAST, codeSymbols)}
+                Overview ({affectedSectionsCount})
               </button>
-            ))}
+              <button
+                className={`nav-tab ${activeTab === 'paper' ? 'nav-tab-active' : ''}`}
+                onClick={() => setActiveTab('paper')}
+              >
+                Manuscript Details ({paperAST.sections.length})
+              </button>
+              <button
+                className={`nav-tab ${activeTab === 'experiments' ? 'nav-tab-active' : ''}`}
+                onClick={() => setActiveTab('experiments')}
+              >
+                Equations & Tables ({equationsCount})
+              </button>
+            </div>
 
-            {/* Dev Mode separator + tabs */}
-            {devMode && (
-              <>
-                <span className="text-[10px] font-mono text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
-                  DEV
-                </span>
-                {DEV_TABS.map(tab => (
-                  <button
-                    key={tab.id}
-                    id={`tab-${tab.id}`}
-                    className={`neo-tab text-amber-800 ${safeActiveTab === tab.id ? 'neo-tab-active border-amber-400' : ''}`}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    {tab.label(analysis, paperAST, codeSymbols)}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-
-          {/* Tab Contents */}
-          <div className="w-full max-w-5xl">
-
-            {/* OVERVIEW — Researcher-first summary */}
-            {safeActiveTab === 'overview' && (
-              <div className="space-y-5 w-full">
-                {!analysis ? (
-                  <div className="neo-box p-10 text-center space-y-3">
-                    <p className="text-sm font-semibold text-[var(--box-text)]">No analysis yet</p>
-                    <p className="text-xs text-gray-500">Load a code repository and research paper, then click <strong>Analyse Impact</strong>.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Affected sections summary */}
-                    {analysis.affected_sections?.length > 0 && (
-                      <div className="neo-box p-5">
-                        <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono mb-3">
-                          Sections Affected by This Change
-                        </h2>
-                        <div className="space-y-2">
-                          {analysis.affected_sections.map((sec, i) => (
-                            <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--input-bg)] border border-[var(--border-color)]">
-                              <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
-                                sec.risk === 'CRITICAL' ? 'text-red-700 bg-red-50 border-red-200' :
-                                sec.risk === 'HIGH'     ? 'text-orange-700 bg-orange-50 border-orange-200' :
-                                sec.risk === 'MAJOR'    ? 'text-amber-700 bg-amber-50 border-amber-200' :
-                                                          'text-blue-700 bg-blue-50 border-blue-200'
-                              }`}>{sec.risk || 'MINOR'}</span>
-                              <div>
-                                <p className="text-xs font-semibold text-[var(--box-text)]">{sec.title}</p>
-                                <p className="text-[11px] text-gray-500 mt-0.5">{sec.reason}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+            {/* Results Body */}
+            <div className="mt-4">
+              
+              {/* TAB 1: OVERVIEW */}
+              {activeTab === 'overview' && (
+                <div>
+                  {!analysis ? (
+                    <div className="radly-card p-12 text-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 mx-auto flex items-center justify-center">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                       </div>
-                    )}
-                    {analysis.affected_sections?.length === 0 && (
-                      <div className="neo-box p-6 text-center">
-                        <p className="text-xs text-emerald-700 font-semibold">✓ No paper sections appear to be affected by this change.</p>
-                      </div>
-                    )}
-                    {/* Error diagnostics (only shown on ANALYSIS_FAILED) */}
-                    {analysis.status === 'ANALYSIS_FAILED' && analysis.error_diagnostics && (
-                      <div className="neo-box p-5 border-red-300 bg-red-50/30">
-                        <h2 className="text-xs font-semibold text-red-700 uppercase tracking-wider font-mono mb-2">Analysis Failed</h2>
-                        <p className="text-xs text-red-600">{analysis.engine?.error_summary}</p>
-                        <p className="text-[11px] text-gray-500 mt-1">{analysis.engine?.note}</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* CHANGES — List of affected sections with suggest text */}
-            {safeActiveTab === 'changes' && (
-              <div className="neo-box p-5 w-full">
-                <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono mb-4">
-                  Change Impact Detail
-                </h2>
-                {!analysis?.affected_sections?.length ? (
-                  <p className="text-xs text-gray-500 text-center py-6">No affected sections identified.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {analysis.affected_sections.map((sec, i) => (
-                      <div key={i} className="border border-[var(--border-color)] rounded-lg p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-[var(--box-text)]">{sec.title}</span>
-                          <span className="text-[10px] font-mono text-gray-400">{sec.section_id}</span>
-                          <span className={`ml-auto text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
-                            sec.risk === 'CRITICAL' ? 'text-red-700 bg-red-50 border-red-200' :
-                            sec.risk === 'HIGH'     ? 'text-orange-700 bg-orange-50 border-orange-200' :
-                            sec.risk === 'MAJOR'    ? 'text-amber-700 bg-amber-50 border-amber-200' :
-                                                      'text-blue-700 bg-blue-50 border-blue-200'
-                          }`}>{sec.risk || 'MINOR'}</span>
-                        </div>
-                        <p className="text-[11px] text-gray-500">{sec.reason}</p>
-                        {sec.suggested_text && (
-                          <div className="bg-emerald-50 border border-emerald-200 rounded p-2">
-                            <p className="text-[10px] font-semibold text-emerald-700 uppercase mb-1">Suggested revision:</p>
-                            <p className="text-[11px] text-emerald-800 font-mono">{sec.suggested_text}</p>
+                      <h4 className="text-sm font-semibold text-[var(--text-main)]">Ready to Analyze Impact</h4>
+                      <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
+                        Load your repository, upload your paper, and enter a proposed change query to generate an impact report.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {analysis.affected_sections?.length > 0 ? (
+                        <div className="radly-card p-6 space-y-4">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <h3 className="text-sm font-semibold text-[var(--text-main)]">
+                              Identified Affected Sections ({analysis.affected_sections.length})
+                            </h3>
+                            <span className="text-xs text-[var(--text-muted)]">
+                              Impact Blast Radius Summary
+                            </span>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* PAPER IMPACT — full PaperImpactViewer */}
-            {safeActiveTab === 'paper' && (
-              <div className="neo-box p-5 w-full">
-                <PaperImpactViewer paperAST={paperAST} analysis={analysis} />
-              </div>
-            )}
-
-            {/* EXPERIMENTS — equations + tables */}
-            {safeActiveTab === 'experiments' && (
-              <div className="space-y-5 w-full">
-                {analysis?.affected_equations?.length > 0 && (
-                  <div className="neo-box p-5">
-                    <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono mb-3">
-                      Affected Equations ({analysis.affected_equations.length})
-                    </h2>
-                    {analysis.affected_equations.map((eq, i) => (
-                      <div key={i} className="p-3 border border-[var(--border-color)] rounded mb-2 flex items-start gap-3">
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">{eq.risk}</span>
-                        <div>
-                          <p className="text-xs font-semibold text-[var(--box-text)]">{eq.label}</p>
-                          <p className="text-[11px] text-gray-500">{eq.explanation}</p>
+                          <div className="space-y-3">
+                            {analysis.affected_sections.map((sec, i) => (
+                              <div
+                                key={i}
+                                className="p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors bg-white flex items-start gap-4"
+                              >
+                                <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full shrink-0 ${
+                                  sec.risk === 'CRITICAL' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                  sec.risk === 'HIGH'     ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                                  sec.risk === 'MAJOR'    ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                                            'bg-sky-50 text-sky-700 border border-sky-200'
+                                }`}>
+                                  {sec.risk || 'MINOR'}
+                                </span>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-semibold text-[var(--text-main)]">{sec.title}</p>
+                                  <p className="text-xs text-[var(--text-muted)] leading-relaxed">{sec.reason}</p>
+                                  {sec.suggested_text && (
+                                    <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700">
+                                      <span className="text-[10px] font-semibold uppercase text-slate-500 block mb-1">Suggested Diff:</span>
+                                      {sec.suggested_text}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {analysis?.affected_tables?.length > 0 && (
-                  <div className="neo-box p-5">
-                    <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono mb-3">
-                      Affected Tables ({analysis.affected_tables.length})
-                    </h2>
-                    {analysis.affected_tables.map((tbl, i) => (
-                      <div key={i} className="p-3 border border-[var(--border-color)] rounded mb-2 flex items-start gap-3">
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shrink-0">{tbl.risk}</span>
-                        <div>
-                          <p className="text-xs font-semibold text-[var(--box-text)]">{tbl.label}</p>
-                          <p className="text-[11px] text-gray-500">{tbl.explanation}</p>
+                      ) : (
+                        <div className="radly-card p-8 text-center text-xs text-emerald-700 font-semibold bg-emerald-50/50 border-emerald-200">
+                          ✓ No paper sections appear to be adversely impacted by this code modification.
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!analysis?.affected_equations?.length && !analysis?.affected_tables?.length && (
-                  <div className="neo-box p-10 text-center">
-                    <p className="text-xs text-gray-500">No affected equations or tables identified.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* DEV: LINEAGE GRAPH */}
-            {safeActiveTab === 'lineage' && devMode && (
-              <div className="neo-box p-5 w-full">
-                <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono">
-                    Lineage Graph (NEEDS_REVIEW — not shown to researchers)
-                  </h2>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded font-mono">Dev Only</span>
-                </div>
-                <p className="text-[11px] text-gray-500 mb-3">
-                  These are candidate dependency edges from static analysis. All are tagged NEEDS_REVIEW and are NOT presented as verified findings.
-                </p>
-                <DependencyFlow lineageGraph={analysis?.lineage_graph || []} />
-              </div>
-            )}
-
-            {/* DEV: AGENT TRACE */}
-            {safeActiveTab === 'agents' && devMode && (
-              <div className="neo-box p-5 space-y-4 w-full">
-                <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2">
-                  <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono">
-                    Multi-Agent Trace Log
-                  </h2>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded font-mono">Dev Only</span>
-                  {analysis?.status && (
-                    <span className="ml-auto text-[10px] font-semibold text-[var(--box-text)] border border-[var(--border-color)] px-2 py-0.5 rounded">
-                      {analysis.status}
-                    </span>
+                      )}
+                    </div>
                   )}
                 </div>
-                {!analysis ? (
-                  <p className="text-xs font-mono text-slate-500 py-4 text-center">Run an analysis to see the agent trace.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {(analysis.agent_collaboration_trace || []).map((trace, idx) => (
-                      <div key={idx} className="neo-box p-4 flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-[var(--box-text)] uppercase text-xs">{trace.agent}</span>
-                          <span className="bg-[var(--input-bg)] border border-[var(--border-color)] px-2 py-0.5 rounded text-[10px] font-semibold">COMPLETED</span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 font-medium">Role: {trace.role}</p>
-                        <p className="text-[11px] text-[var(--box-text)]">Output: {trace.output_summary}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
 
-            {/* DEV: CODE AST */}
-            {safeActiveTab === 'code_ast' && devMode && (
-              <div className="neo-box p-5 w-full">
-                <div className="flex items-center gap-2 mb-3">
-                  <h2 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono">
-                    Code AST Symbols
-                  </h2>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded font-mono">Dev Only</span>
+              {/* TAB 2: MANUSCRIPT DETAILS */}
+              {activeTab === 'paper' && (
+                <div className="radly-card p-6">
+                  <PaperImpactViewer paperAST={paperAST} analysis={analysis} />
                 </div>
-                <CodeGraphViewer symbols={codeSymbols} />
-              </div>
-            )}
+              )}
+
+              {/* TAB 3: EQUATIONS & TABLES */}
+              {activeTab === 'experiments' && (
+                <div className="space-y-4">
+                  {analysis?.affected_equations?.length > 0 && (
+                    <div className="radly-card p-6 space-y-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                        Affected Equations ({analysis.affected_equations.length})
+                      </h4>
+                      {analysis.affected_equations.map((eq, i) => (
+                        <div key={i} className="p-3 border border-slate-200 rounded-lg flex items-start gap-3 text-xs">
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                            {eq.risk}
+                          </span>
+                          <div>
+                            <p className="font-semibold text-[var(--text-main)]">{eq.label}</p>
+                            <p className="text-[var(--text-muted)]">{eq.explanation}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {analysis?.affected_tables?.length > 0 && (
+                    <div className="radly-card p-6 space-y-3">
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                        Affected Tables ({analysis.affected_tables.length})
+                      </h4>
+                      {analysis.affected_tables.map((tbl, i) => (
+                        <div key={i} className="p-3 border border-slate-200 rounded-lg flex items-start gap-3 text-xs">
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                            {tbl.risk}
+                          </span>
+                          <div>
+                            <p className="font-semibold text-[var(--text-main)]">{tbl.label}</p>
+                            <p className="text-[var(--text-muted)]">{tbl.explanation}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {!analysis?.affected_equations?.length && !analysis?.affected_tables?.length && (
+                    <div className="radly-card p-10 text-center text-xs text-[var(--text-muted)]">
+                      No mathematical equations or experimental tables affected by this change.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </main>
 
-        <footer className="w-full py-6 text-center text-xs font-medium text-gray-500 mt-6 border-t border-[var(--border-color)]">
-          Radly — Research Code &amp; Paper Impact Analyzer · Open Source
+        <footer className="py-6 text-center text-xs text-slate-400 border-t border-slate-200 mt-12">
+          Radly — Research Code &amp; Paper Impact Analyzer · Clean SaaS Edition
         </footer>
       </div>
     </div>
