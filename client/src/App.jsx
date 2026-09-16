@@ -296,12 +296,6 @@ export default function App() {
                   <h2 className="text-lg font-black font-mono uppercase text-black">Workspace Ingestion</h2>
                   <p className="text-xs text-gray-700 font-medium">Load and inspect your codebase AST symbols and paper manuscript structure.</p>
                 </div>
-                <button
-                  onClick={() => setActiveSidebarNav('analysis')}
-                  className="neo-brutal-btn-primary text-xs"
-                >
-                  Go to Analysis ⚡
-                </button>
               </div>
 
               {/* Ingestion Console */}
