@@ -393,31 +393,50 @@ Output must be a valid JSON object:
   ]
 }"""
 
+    query_words = set(re.findall(r'\w{3,}', (query_or_code_change or '').lower()))
+
+    # Rank sections by keyword match overlap
+    def score_sec(s):
+        t = ((s.get('title') or '') + ' ' + (s.get('text') or '')).lower()
+        return sum(1 for w in query_words if w in t)
+
+    ranked_sections = sorted(sections, key=score_sec, reverse=True)
+    # Take top relevant sections (or all if <= 16)
+    selected_sections = ranked_sections[:16] if len(sections) > 16 else sections
+
+    # Score symbols similarly
+    def score_sym(s):
+        sym_str = ((s.get('symbol') or '') + ' ' + (s.get('file') or '')).lower()
+        return sum(1 for w in query_words if w in sym_str)
+
+    ranked_symbols = sorted(code_symbols or [], key=score_sym, reverse=True)
+    selected_symbols = ranked_symbols[:25]
+
     compact_symbols = [{
         'symbol': s.get('symbol'),
         'type': s.get('type'),
-        'value': str(s.get('value', ''))[:40],
+        'value': str(s.get('value', ''))[:50],
         'file': s.get('file'),
         'line': s.get('line')
-    } for s in (code_symbols or [])[:10]]
+    } for s in selected_symbols]
 
     compact_sections = [{
         'id': s.get('id'),
         'title': s.get('title'),
-        'textSnippet': truncate_at_sentence(s.get('text', ''), 200)
-    } for s in sections[:8]]
+        'textSnippet': truncate_at_sentence(s.get('text', ''), 350)
+    } for s in selected_sections]
 
     compact_equations = [{
         'id': eq.get('id'),
         'label': eq.get('label'),
-        'content': str(eq.get('content', ''))[:80]
-    } for eq in equations[:4]]
+        'content': str(eq.get('content', ''))[:120]
+    } for eq in equations[:8]]
 
     static_matches_compact = [{
         'symbol': m['symbol'],
         'section': m['target'],
         'basis': m['evidenceBasis']
-    } for m in static_matches[:6]]
+    } for m in static_matches[:10]]
 
     user_prompt = f"""[PROPOSED CHANGE]:
 "{query_or_code_change}"

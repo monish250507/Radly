@@ -34,9 +34,9 @@ async def tick_agent(run: ResearchAgentRun, project: ResearchProject, call_groq_
     # Build strict context
     sys_prompt = """You are a Research Orchestration Agent. Your job is to answer the user's research goal using the deterministic tools provided.
 You CANNOT invent evidence or fabricate nodes. You must rely purely on the tools.
-Output valid JSON ONLY.
+Output valid JSON ONLY. DO NOT call any native external functions or tools; format your action directly as a JSON object string.
 
-If you need more info, output:
+If you need more info, output this JSON:
 {
   "action": "tool_call",
   "tool": "ToolName",

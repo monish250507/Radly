@@ -37,9 +37,9 @@ You must test:
 4. Is there contradictory evidence?
 5. Is the conclusion stronger than the evidence?
 
-Output valid JSON ONLY.
+Output valid JSON ONLY. DO NOT call any native external functions or tools; format your action directly as a JSON object string.
 
-To verify evidence, request a tool:
+To verify evidence, output this JSON:
 {
   "action": "tool_call",
   "tool": "ToolName",
