@@ -69,7 +69,12 @@ export default function ChangeConsole({
                   onClick={onIngestRepo}
                   disabled={isIngesting || !repoUrl.trim()}
                 >
-                  {isIngesting ? 'Loading…' : 'Load Repo'}
+                  {isIngesting ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      Cloning & Indexing…
+                    </span>
+                  ) : 'Load Repo'}
                 </button>
               </div>
 
