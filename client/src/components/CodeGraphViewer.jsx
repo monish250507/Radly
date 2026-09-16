@@ -1,53 +1,70 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function CodeGraphViewer({ symbols }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+
   if (!symbols || symbols.length === 0) {
     return (
-      <div className="p-4 text-center text-slate-700 font-mono text-xs font-bold">
-        No code AST symbols indexed. Input a GitHub URL or code files.
+      <div className="p-4 text-center text-gray-500 font-mono text-xs">
+        No code AST symbols indexed. Input a GitHub URL or upload code files.
       </div>
     );
   }
 
+  const filtered = symbols.filter(s => 
+    !searchTerm || 
+    (s.symbol || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.file || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const displayed = filtered.slice(0, page * PAGE_SIZE);
+
   return (
-    <div className="space-y-4 w-full overflow-hidden h-fit">
-      <div className="flex flex-col items-start border-b border-[var(--border-color)] pb-2 gap-0.5">
-        <div className="flex items-center justify-between w-full">
-          <h3 className="text-xs font-semibold text-[var(--box-text)] uppercase tracking-wider font-mono">
-            Indexed Code AST Symbols ({symbols.length})
-          </h3>
-          <span className="text-[11px] font-medium text-gray-500">AST Index</span>
-        </div>
-        <p className="text-[11px] font-medium text-gray-500">
-          Variables, hyperparameters, and AST symbols indexed by source file line.
-        </p>
+    <div className="space-y-3 w-full">
+      <div className="flex items-center justify-between gap-2">
+        <input
+          type="text"
+          className="neo-brutal-input text-xs py-1.5 px-2.5 w-full max-w-xs"
+          placeholder="Filter symbols..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+        />
+        <span className="text-[11px] font-mono text-gray-600 shrink-0">
+          Showing {displayed.length} of {filtered.length}
+        </span>
       </div>
 
-      <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1 w-full">
-        {symbols.map((sym, idx) => (
+      <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 w-full">
+        {displayed.map((sym, idx) => (
           <div
             key={idx}
-            className="neo-box p-3 w-full flex flex-col space-y-1.5 overflow-hidden"
+            className="p-2.5 border-2 border-black rounded-lg bg-white shadow-[2px_2px_0px_#000] flex flex-col gap-1"
           >
-            {/* Row 1: Symbol Name & Type Badge */}
-            <div className="flex items-center justify-between gap-2 w-full">
-              <span className="text-[var(--box-text)] font-semibold text-xs truncate break-all" title={sym.symbol}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-xs font-mono text-black truncate" title={sym.symbol}>
                 {sym.symbol}
               </span>
-              <span className="text-[10px] uppercase bg-sky-500/10 border border-sky-500/20 text-sky-600 font-semibold px-1.5 py-0.5 rounded whitespace-nowrap">
-                {sym.type}
+              <span className="neo-badge neo-badge-minor text-[9px] py-0.5 px-1.5 shrink-0">
+                {sym.type || 'SYMBOL'}
               </span>
             </div>
-
-            {/* Row 2: File Anchor & Line Number */}
-            <div className="flex items-center justify-between text-gray-500 font-medium text-[11px] w-full pt-0.5 border-t border-[var(--border-color)]">
-              <span className="truncate max-w-[180px]" title={sym.file}>
-                {sym.file}
-              </span>
-              <span className="text-[var(--box-text)] font-semibold whitespace-nowrap">Line {sym.line}</span>
+            <div className="flex items-center justify-between text-[10px] font-mono text-gray-600 pt-1 border-t border-gray-200">
+              <span className="truncate max-w-[200px]" title={sym.file}>{sym.file}</span>
+              <span className="font-bold shrink-0">Line {sym.line}</span>
             </div>
           </div>
         ))}
+
+        {displayed.length < filtered.length && (
+          <button
+            onClick={() => setPage(p => p + 1)}
+            className="neo-brutal-btn-white text-xs w-full py-2 font-bold mt-2"
+          >
+            Load Next 50 Symbols ({filtered.length - displayed.length} remaining)
+          </button>
+        )}
       </div>
     </div>
   );

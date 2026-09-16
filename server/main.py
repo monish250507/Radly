@@ -281,15 +281,22 @@ async def ingest_github(req: IngestGithubRequest):
                 except Exception:
                     pass
 
-    if not code_files:
-        raise HTTPException(status_code=404, detail="Could not retrieve repository contents.")
+    # Filter out cookiecutter template dummy folders and third-party vendored code
+    ignored_subpaths = {'cookiecutter', 'templates', 'node_modules', '.git', '__pycache__', 'test', 'tests', 'venv', '.venv'}
+    code_files = [f for f in code_files if not any(ign in f['path'].lower() for ign in ignored_subpaths)]
 
     symbols = extract_code_symbols(code_files)
+    # Cap symbols payload returned to frontend at 2000 most relevant symbols to keep browser ultra-fast
+    total_symbols_count = len(symbols)
+    if len(symbols) > 2000:
+        symbols = symbols[:2000]
+
     return {
         "success": True,
         "repo": f"{owner}/{repo}",
         "fileCount": len(code_files),
-        "files": [{"path": f["path"], "lineCount": len(f["content"].split("\n"))} for f in code_files],
+        "totalSymbolsCount": total_symbols_count,
+        "files": [{"path": f["path"], "lineCount": len(f["content"].split("\n"))} for f in code_files[:100]],
         "symbols": symbols
     }
 

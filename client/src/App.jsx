@@ -34,6 +34,7 @@ export default function App() {
   const [selectedFileName, setSelectedFileName] = useState('');
 
   const [codeSymbols, setCodeSymbols] = useState([]);
+  const [totalSymbolsFound, setTotalSymbolsFound] = useState(0);
   const [ingestedFilesCount, setIngestedFilesCount] = useState(0);
   const [paperAST, setPaperAST] = useState({ sections: [], equations: [], tables: [], numbers: [] });
   const [analysis, setAnalysis] = useState(null);
@@ -59,6 +60,9 @@ export default function App() {
       });
       setCodeSymbols(data.symbols || []);
       setIngestedFilesCount(data.fileCount || 1);
+      if (data.totalSymbolsCount) {
+        setTotalSymbolsFound(data.totalSymbolsCount);
+      }
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -375,7 +379,7 @@ export default function App() {
                     </span>
                   </div>
                   <div className="mt-3 flex items-baseline gap-2">
-                    <span className="text-3xl font-black font-mono text-black">{codeSymbols.length}</span>
+                    <span className="text-3xl font-black font-mono text-black">{totalSymbolsFound || codeSymbols.length}</span>
                     <span className="text-xs font-bold text-gray-600">from {ingestedFilesCount} files</span>
                   </div>
                 </div>
