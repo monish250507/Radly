@@ -216,17 +216,17 @@ export default function App() {
           </button>
         </div>
 
-        {/* Top Center: App Brand & Name */}
-        <div className="flex items-center gap-2.5 max-w-xl text-center">
+        {/* Top Center: App Brand & Title */}
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-[#fde047] text-black font-black text-base flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000] shrink-0">
             R
           </div>
-          <div className="text-center">
-            <span className="font-black text-base sm:text-lg tracking-tight font-mono text-white leading-none block">
-              Radly
+          <div className="flex flex-col items-center">
+            <span className="font-black text-lg sm:text-xl tracking-tight font-mono text-white leading-tight">
+              RADLY
             </span>
-            <span className="text-[9px] sm:text-[10px] block text-[#fde047] font-bold tracking-tight leading-tight mt-0.5 max-w-md line-clamp-1">
-              Research Artifact &amp; Diff Linkage analYzer — Automated Blast Radius for Research Code &amp; Papers
+            <span className="text-[10px] text-white/90 font-mono tracking-wide hidden md:block">
+              Research Artifact &amp; Diff Linkage analYzer
             </span>
           </div>
         </div>

@@ -35,8 +35,8 @@ export default function ImpactHeader({
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-700 font-medium mt-1">
-          Automated blast radius and bipartite verification between code repositories and research papers.
+        <p className="text-xs text-gray-800 font-semibold mt-1">
+          <strong className="font-mono text-black font-extrabold">RADLY:</strong> Research Artifact &amp; Diff Linkage analYzer — Automated Blast Radius for Research Code &amp; Papers
         </p>
       </div>
 
